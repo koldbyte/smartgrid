@@ -1,7 +1,9 @@
 package com.bhaskardivya.projects.smartgrid.base
 
+import java.util.concurrent.TimeUnit
+
 import com.bhaskardivya.projects.smartgrid.model._
-import com.bhaskardivya.projects.smartgrid.operators.AverageAggregateWithKey
+import com.bhaskardivya.projects.smartgrid.operators.{AverageAggregateWithKey, HBaseAsyncFunction}
 import com.bhaskardivya.projects.smartgrid.pipeline._
 import com.bhaskardivya.projects.smartgrid.sinks.HBaseOutputFormatAverageWithKey
 import org.apache.flink.api.java.utils.ParameterTool
@@ -21,6 +23,11 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     */
   def getKeyName(): String
 
+  /**
+    * Method to prepare the raw events properly aggregated(sum) based on the key
+    * @param dataStream
+    * @return
+    */
   def initializeFlow(dataStream: DataStream[SensorEvent]): DataStream[SensorEvent]
 
   /**
@@ -60,8 +67,10 @@ abstract class SensorEventAveragingJobBase extends Serializable {
       .assignTimestampsAndWatermarks(SensorEvent.tsAssigner())
       .name("Kafka Source with TS")
 
+    // Create a stream with sum according to the key specified
     val initializedFlow = initializeFlow(withTimestamps)
 
+    // Streams for each window duration for the average
     val windowed1min = initializedFlow
       .keyBy(keyGetter(_))
       .window(SlidingEventTimeWindows.of(Time.minutes(1), Time.seconds(Constants.SLIDING_INTERVAL)))
@@ -92,6 +101,7 @@ abstract class SensorEventAveragingJobBase extends Serializable {
       .reduce(AverageWithKey.reducer)
       .name(getKeyName() + "Average for 120 min Window")
 
+    // Write to file for debug
     val debug = params.has("debug")
     if (debug) {
       initializedFlow.writeAsCsv("/data/output.initializedFlow.csv", FileSystem.WriteMode.OVERWRITE)
@@ -102,6 +112,7 @@ abstract class SensorEventAveragingJobBase extends Serializable {
       windowed120min.writeAsCsv("/data/output.windowed120min.csv", FileSystem.WriteMode.OVERWRITE)
     }
 
+    // Write to HBase for each window duration
     windowed1min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_1MIN, getTargetColumnFamily())))
       .name(getKeyName() + " HBase - 1 Min Window")
 
@@ -116,6 +127,51 @@ abstract class SensorEventAveragingJobBase extends Serializable {
 
     windowed120min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_120MIN, getTargetColumnFamily())))
       .name(getKeyName() + " HBase - 120 Min Window")
+
+    val timeout = params.getLong("timeout", 100000L)
+
+    // Enrich the average calculation with the median value for each stream of different window duration
+    val windowed1min_prediction: DataStream[(AverageWithKey, MedianLoad)] = AsyncDataStream.orderedWait(
+      windowed1min,
+      new HBaseAsyncFunction(Constants.TABLE_1MIN, getTargetColumnFamily()),
+      timeout,
+      TimeUnit.MILLISECONDS,
+      20
+    )
+
+    windowed1min_prediction.writeAsCsv("/data/output.windowed1min_prediction.csv", FileSystem.WriteMode.OVERWRITE)
+
+    val windowed5min_prediction: DataStream[(AverageWithKey, MedianLoad)] = AsyncDataStream.orderedWait(
+      windowed5min,
+      new HBaseAsyncFunction(Constants.TABLE_5MIN, getTargetColumnFamily()),
+      timeout,
+      TimeUnit.MILLISECONDS,
+      20
+    )
+
+    val windowed15min_prediction: DataStream[(AverageWithKey, MedianLoad)] = AsyncDataStream.orderedWait(
+      windowed15min,
+      new HBaseAsyncFunction(Constants.TABLE_15MIN, getTargetColumnFamily()),
+      timeout,
+      TimeUnit.MILLISECONDS,
+      20
+    )
+
+    val windowed60min_prediction: DataStream[(AverageWithKey, MedianLoad)] = AsyncDataStream.orderedWait(
+      windowed60min,
+      new HBaseAsyncFunction(Constants.TABLE_60MIN, getTargetColumnFamily()),
+      timeout,
+      TimeUnit.MILLISECONDS,
+      20
+    )
+
+    val windowed120min_prediction: DataStream[(AverageWithKey, MedianLoad)] = AsyncDataStream.orderedWait(
+      windowed120min,
+      new HBaseAsyncFunction(Constants.TABLE_120MIN, getTargetColumnFamily()),
+      timeout,
+      TimeUnit.MILLISECONDS,
+      20
+    )
 
     env.execute("Sensor Event" + getKeyName() + " Averaging Job (Kafka to HBase Averages)")
 
