@@ -11,13 +11,21 @@ case class AverageWithKey(var key: String, var sum: Double, var count: Long){
   }
 
 
-  def toHBaseColumnValue(): String = {
-    this.sum + Constants.DELIMITER + this.count
+  def toHBaseColumnValue(): Double = {
+    //this.sum + Constants.DELIMITER + this.count
+    ( sum / count )
   }
 
   def fromHBaseColumnValue(column: String, value: String): AverageWithKey = {
-    val fields = value.split(Constants.DELIMITER)
-    AverageWithKey(column, fields(0).toDouble, fields(2).toLong)
+    //val fields = value.split(Constants.DELIMITER)
+    //AverageWithKey(column, fields(0).toDouble, fields(2).toLong)
+    var sumValue = 0.0
+    try {
+      sumValue = value.toDouble
+    }catch {
+      case e: Exception => sumValue = 0.0
+    }
+    AverageWithKey(column, sumValue, 1)
   }
 }
 

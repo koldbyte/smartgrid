@@ -45,7 +45,7 @@ class HBaseOutputFormatAverageWithKey extends OutputFormat[AverageWithKey] {
   @throws[IOException]
   override def writeRecord(record: AverageWithKey): Unit = {
     val put = new Put(Bytes.toBytes(taskNumber + rowNumber))
-    put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes(record.key), Bytes.toBytes(record.toHBaseColumnValue()))
+    put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes(record.key), Bytes.toBytes(record.toHBaseColumnValue().asInstanceOf[java.lang.Double].doubleValue()))
     rowNumber += 1
     table.put(put)
   }
