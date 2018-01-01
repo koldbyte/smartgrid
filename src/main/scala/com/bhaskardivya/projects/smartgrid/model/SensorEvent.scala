@@ -6,6 +6,8 @@ import org.apache.flink.api.common.serialization.TypeInformationSerializationSch
 import org.apache.flink.api.common.typeinfo.{TypeHint, TypeInformation}
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor
 import org.apache.flink.streaming.api.windowing.time.Time
+import org.apache.sling.commons.json.JSONObject
+
 
 
 /**
@@ -14,6 +16,23 @@ import org.apache.flink.streaming.api.windowing.time.Time
 case class SensorEvent(id: Long, timestamp: Long, value: Double, property: Int, plug_id: Long, household_id: Long, house_id: Long){
   override def toString: String = ToStringBuilder.reflectionToString(this)
   def getTimeMillis(): Long = this.timestamp*1000
+
+  def toJSONString():String = {
+    toJSON().toString()
+  }
+
+  def toJSON(): JSONObject = {
+    val json: JSONObject = new JSONObject()
+    json.put("id", this.id)
+    json.put("timestamp", this.timestamp)
+    json.put("value", this.value)
+    json.put("property", this.property)
+    json.put("plug_id", this.plug_id)
+    json.put("household_id", this.household_id)
+    json.put("house_id", this.house_id)
+
+    json
+  }
 }
 
 object SensorEvent {
@@ -21,7 +40,7 @@ object SensorEvent {
   def fromString(line: String): SensorEvent = {
     val tokens: Array[String] = line.split(",")
 
-    try{
+    try {
       val id: Long = tokens(0).toLong
       val timestamp: Long = tokens(1).toLong
       val value: Double = tokens(2).toDouble

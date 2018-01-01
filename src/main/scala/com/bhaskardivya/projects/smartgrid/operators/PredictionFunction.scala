@@ -9,7 +9,7 @@ import org.apache.flink.streaming.api.windowing.time.Time
   * @param entity
   * @param slidingWindow
   */
-class PredictionFunction(entity: String, slidingWindow: Time) extends MapFunction[(AverageWithKey, MedianLoad), Prediction]{
+class PredictionFunction(entity: String, slidingWindow: Long) extends MapFunction[(AverageWithKey, MedianLoad), Prediction]{
   override def map(value: (AverageWithKey, MedianLoad)): Prediction = {
     //AverageWithKey(0,100314.02700000002,29),MedianLoad(3505.088802675305)
     val avg = value._1.sum / value._1.count

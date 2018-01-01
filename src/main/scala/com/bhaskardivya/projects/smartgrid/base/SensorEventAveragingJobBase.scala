@@ -1,13 +1,11 @@
 package com.bhaskardivya.projects.smartgrid.base
 
-import java.net.{InetAddress, InetSocketAddress}
 import java.util.concurrent.TimeUnit
 
 import com.bhaskardivya.projects.smartgrid.model._
 import com.bhaskardivya.projects.smartgrid.operators.{AverageAggregateWithKey, HBaseAsyncFunction, PredictionFunction}
 import com.bhaskardivya.projects.smartgrid.pipeline._
-import com.bhaskardivya.projects.smartgrid.sinks.{HBaseOutputFormatAverageWithKey, PredictionElasticSearchSink}
-import org.apache.flink.api.common.functions.RuntimeContext
+import com.bhaskardivya.projects.smartgrid.sinks.{HBaseOutputFormatAverageWithKey, PredictionElasticSearchSink, SensorEventElasticSearchSink}
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.core.fs.FileSystem
 import org.apache.flink.streaming.api.TimeCharacteristic
@@ -15,8 +13,6 @@ import org.apache.flink.streaming.api.functions.sink.OutputFormatSinkFunction
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows
 import org.apache.flink.streaming.api.windowing.time.Time
-import org.apache.flink.streaming.connectors.elasticsearch.{ElasticsearchSinkFunction, RequestIndexer}
-import org.apache.flink.streaming.connectors.elasticsearch5.ElasticsearchSink
 
 abstract class SensorEventAveragingJobBase extends Serializable {
 
@@ -193,27 +189,52 @@ abstract class SensorEventAveragingJobBase extends Serializable {
       windowed120min_enriched.writeAsCsv("/data/output.windowed120min_enriched.csv", FileSystem.WriteMode.OVERWRITE)
     }
 
-    //Initialize Elastic search configuration
-    val esClusterLocationIP = params.get("es.cluster.ip", "192.168.99.100")
-    val esClusterLocationPort = params.getInt("es.cluster.port", 9300)
-    val config = new java.util.HashMap[String, String]
-    config.put("cluster.name", params.get("es.cluster.name", "docker-cluster"))
-    // This instructs the sink to emit after every element, otherwise they would be buffered
-    config.put("bulk.flush.max.actions", "1")
-
-    val transportAddresses = new java.util.ArrayList[InetSocketAddress]
-    transportAddresses.add(new InetSocketAddress(InetAddress.getByName(esClusterLocationIP), esClusterLocationPort))
 
     // Create the predicted value streams
     val windowed1min_prediction = windowed1min_enriched
-      .map(new PredictionFunction(getKeyName(), Time.minutes(1)))
-      .addSink(new ElasticsearchSink[Prediction](config, transportAddresses, PredictionElasticSearchSink.of("", "")))
+      .map(new PredictionFunction(getKeyName(), Time.minutes(1).toMilliseconds))
+
+    windowed1min_prediction
+      .addSink(PredictionElasticSearchSink(params,Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_1MIN))
       .name(getKeyName() + " Prediction Sink - ES - 1 min Window")
 
-    val windowed5min_prediction = windowed1min_enriched.map(new PredictionFunction(getKeyName(), Time.minutes(5)))
-    val windowed15min_prediction = windowed1min_enriched.map(new PredictionFunction(getKeyName(), Time.minutes(15)))
-    val windowed60min_prediction = windowed1min_enriched.map(new PredictionFunction(getKeyName(), Time.minutes(60)))
-    val windowed120min_prediction = windowed1min_enriched.map(new PredictionFunction(getKeyName(), Time.minutes(120)))
+    val windowed5min_prediction = windowed1min_enriched
+      .map(new PredictionFunction(getKeyName(), Time.minutes(5).toMilliseconds))
+
+    windowed5min_prediction
+      .addSink(PredictionElasticSearchSink(params,Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_5MIN))
+      .name(getKeyName() + " Prediction Sink - ES - 5 min Window")
+
+    val windowed15min_prediction = windowed1min_enriched
+      .map(new PredictionFunction(getKeyName(), Time.minutes(15).toMilliseconds))
+
+    windowed15min_prediction
+      .addSink(PredictionElasticSearchSink(params,Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_15MIN))
+      .name(getKeyName() + " Prediction Sink - ES - 15 min Window")
+
+    val windowed60min_prediction = windowed1min_enriched
+      .map(new PredictionFunction(getKeyName(), Time.minutes(60).toMilliseconds))
+
+    windowed60min_prediction
+      .addSink(PredictionElasticSearchSink(params,Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_60MIN))
+      .name(getKeyName() + " Prediction Sink - ES - 60 min Window")
+
+    val windowed120min_prediction = windowed1min_enriched
+      .map(new PredictionFunction(getKeyName(), Time.minutes(120).toMilliseconds))
+
+    windowed120min_prediction.addSink(PredictionElasticSearchSink(params,Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_120MIN))
+      .name(getKeyName() + " Prediction Sink - ES - 120 min Window")
+
+    if (debug) {
+      windowed1min_prediction.writeAsCsv("/data/output.windowed1min_prediction.csv", FileSystem.WriteMode.OVERWRITE)
+      windowed5min_prediction.writeAsCsv("/data/output.windowed5min_prediction.csv", FileSystem.WriteMode.OVERWRITE)
+      windowed15min_prediction.writeAsCsv("/data/output.windowed15min_prediction.csv", FileSystem.WriteMode.OVERWRITE)
+      windowed60min_prediction.writeAsCsv("/data/output.windowed60min_prediction.csv", FileSystem.WriteMode.OVERWRITE)
+      windowed120min_prediction.writeAsCsv("/data/output.windowed120min_prediction.csv", FileSystem.WriteMode.OVERWRITE)
+    }
+
+    //Sink the original feed into ES as well
+    initializedFlow.addSink(SensorEventElasticSearchSink(params, Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_RAW))
 
     env.execute("Sensor Event" + getKeyName() + " Averaging Job (Kafka to HBase Averages)")
 

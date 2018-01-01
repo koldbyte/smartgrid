@@ -4,7 +4,7 @@ import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.sling.commons.json.JSONObject
 
 
-case class Prediction(averageWithKey: AverageWithKey, medianLoad: MedianLoad, key: String, slidingWindow: Time, predictedValue: Double){
+case class Prediction(averageWithKey: AverageWithKey, medianLoad: MedianLoad, key: String, slidingWindow: Long, predictedValue: Double){
 
   def toJSONString(): String = {
     toJSON().toString()
@@ -31,7 +31,7 @@ case class Prediction(averageWithKey: AverageWithKey, medianLoad: MedianLoad, ke
     json.put("key", key)
 
     //sliding window duration
-    json.put("slidingWindowDuration", slidingWindow.toMilliseconds.toString)
+    json.put("slidingWindowDuration", slidingWindow)
 
     //Predicted value
     json.put("predictedValue", predictedValue)
