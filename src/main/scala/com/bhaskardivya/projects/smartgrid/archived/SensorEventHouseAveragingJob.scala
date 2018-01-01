@@ -90,8 +90,8 @@ object SensorEventHouseAveragingJob {
   }
 
   object keyGetter extends AbstractKeyGetter{
-    def apply(element: SensorEvent): String = {
-      element.house_id.toString
+    def apply(element: SensorEvent): SensorKeyObject = {
+      SensorKeyObject(element.house_id)
     }
   }
 

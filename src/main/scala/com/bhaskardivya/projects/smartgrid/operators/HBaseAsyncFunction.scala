@@ -16,7 +16,7 @@ class HBaseAsyncFunction(table: String, columnFamily: String) extends AsyncFunct
     val resultMedian: Future[MedianLoad] = Future[MedianLoad]{
       //val hBaseMedianSource: HBaseMedianSource = new HBaseMedianSource()
       val median = HBaseMedianSource.getMedian(table, columnFamily, input)
-      println("Found Median | " + median.toString + " for " + table.toString + ", " + columnFamily.toString + " for key " + input.key)
+      println("Found Median | " + median.toString + " for " + table.toString + ", " + columnFamily.toString + " for key " + input.key.toColumnString())
       MedianLoad(median)
     }
 

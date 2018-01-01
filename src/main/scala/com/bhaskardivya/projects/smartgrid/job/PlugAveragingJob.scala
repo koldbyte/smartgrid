@@ -1,14 +1,14 @@
 package com.bhaskardivya.projects.smartgrid.job
 
 import com.bhaskardivya.projects.smartgrid.base.SensorEventAveragingJobBase
-import com.bhaskardivya.projects.smartgrid.model.{Constants, SensorEvent}
+import com.bhaskardivya.projects.smartgrid.model.{Constants, SensorEvent, SensorKeyObject}
 import org.apache.flink.streaming.api.scala.DataStream
 
 object PlugAveragingJob extends SensorEventAveragingJobBase with Serializable{
 
   override def getKeyName(): String = "Plug"
 
-  override def getKey(element: SensorEvent): String = element.house_id.toString + Constants.DELIMITER + element.plug_id.toString
+  override def getKey(element: SensorEvent): SensorKeyObject = SensorKeyObject(element.house_id, element.household_id, element.plug_id)
 
   override def getTargetColumnFamily(): String = Constants.PLUG_CF
 

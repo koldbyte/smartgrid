@@ -36,7 +36,7 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     * @param element
     * @return Long Key value
     */
-  def getKey(element: SensorEvent): String
+  def getKey(element: SensorEvent): SensorKeyObject
 
   /**
     * Value of the HBase column family where the averages will be stored
@@ -45,7 +45,7 @@ abstract class SensorEventAveragingJobBase extends Serializable {
   def getTargetColumnFamily(): String
 
   object keyGetter extends AbstractKeyGetter {
-    def apply(element: SensorEvent): String = {
+    def apply(element: SensorEvent): SensorKeyObject = {
       getKey(element)
     }
   }

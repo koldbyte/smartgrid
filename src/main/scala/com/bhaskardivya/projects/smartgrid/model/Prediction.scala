@@ -1,6 +1,7 @@
 package com.bhaskardivya.projects.smartgrid.model
 
-import org.apache.flink.streaming.api.windowing.time.Time
+import java.util.Date
+
 import org.apache.sling.commons.json.JSONObject
 
 
@@ -15,11 +16,11 @@ case class Prediction(averageWithKey: AverageWithKey, medianLoad: MedianLoad, ke
     val json = new JSONObject()
 
     //averageWithKey object
-    val averageWithKeyJSON = new JSONObject()
-    averageWithKeyJSON.put("key", averageWithKey.key)
+    val averageWithKeyJSON = averageWithKey.key.toJSON
     averageWithKeyJSON.put("sum", averageWithKey.sum)
     averageWithKeyJSON.put("count", averageWithKey.count)
-    averageWithKeyJSON.put("avg", averageWithKey.sum / averageWithKey.count)
+    averageWithKeyJSON.put("avg", averageWithKey.averageValue)
+    averageWithKeyJSON.put("eventTimestamp", averageWithKey.eventTimestamp)
     json.put("averageWithKey", averageWithKeyJSON)
 
     //mediaLoad
@@ -35,6 +36,9 @@ case class Prediction(averageWithKey: AverageWithKey, medianLoad: MedianLoad, ke
 
     //Predicted value
     json.put("predictedValue", predictedValue)
+
+    // Current Time
+    json.put("timestamp", new Date().getTime)
 
     json
   }

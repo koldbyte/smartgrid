@@ -19,15 +19,15 @@ object HBaseMedianSource extends Serializable{
     //println("BD | Get median called")
     val scan = new Scan()
     if(columnFamily != null && !columnFamily.isEmpty) {
-      if (avg != null && avg.key!= null && !avg.key.isEmpty)
-        scan.addColumn(columnFamily.getBytes(), avg.key.getBytes())
+      if (avg != null && avg.key!= null)
+        scan.addColumn(columnFamily.getBytes(), avg.key.toColumnString().getBytes())
       else
         scan.addFamily(columnFamily.getBytes())
     }
-    println("BD | Fetching Median " + table + " | " + columnFamily + " | " + avg.key)
+    println("BD | Fetching Median " + table + " | " + columnFamily + " | " + avg.key.toColumnString())
     //println("BD | " + conf.toString)
     val median = aggregationClient.median(TableName.valueOf(table), new DoubleColumnInterpreter, scan)
-    println("BD | Median Fetched " + table + " | " + columnFamily + " | " + avg.key)
+    println("BD | Median Fetched " + table + " | " + columnFamily + " | " + avg.key.toColumnString())
     median
   }
 

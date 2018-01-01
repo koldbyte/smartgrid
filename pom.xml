@@ -41,6 +41,11 @@ under the License.
 				<enabled>true</enabled>
 			</snapshots>
 		</repository>
+        <repository>
+            <id>clojars.snapshots</id>
+            <name></name>
+            <url>http://clojars.org/repo/orderly</url>
+        </repository>
 	</repositories>
 
 	<properties>
@@ -104,6 +109,11 @@ under the License.
 			<artifactId>flink-hbase_${scala.binary.version}</artifactId>
 			<version>1.4.0</version>
 		</dependency>
+        <dependency>
+            <groupId>orderly</groupId>
+            <artifactId>orderly</artifactId>
+            <version>0.12.0</version>
+        </dependency>
 
 		<!-- Elastic search connector -->
 		<dependency>
@@ -169,6 +179,26 @@ under the License.
 					<artifactId>flink-hbase_${scala.binary.version}</artifactId>
 					<version>1.4.0</version>
 				</dependency>
+                <dependency>
+                    <groupId>orderly</groupId>
+                    <artifactId>orderly</artifactId>
+                    <version>0.12.0</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.apache.hadoop</groupId>
+                            <artifactId>hadoop-core</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>org.apache.hbase</groupId>
+                            <artifactId>hbase</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>com.google.guava</groupId>
+                            <artifactId>guava</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+
 				<!-- Elastic search connector -->
 				<dependency>
 					<groupId>org.apache.flink</groupId>

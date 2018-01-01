@@ -26,4 +26,7 @@ object Constants {
   val ES_INDEX_TYPE_120MIN = "prediction_120min"
 
   val ES_INDEX_TYPE_RAW = "raw"
+
+  // Sensor Key Object
+  val KEY_NO_VALUE: Long = -1
 }
