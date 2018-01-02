@@ -13,7 +13,12 @@ import org.apache.sling.commons.json.JSONObject
 /**
   * id, timestamp, value, property, plug_id, household_id, house_id
   */
-case class SensorEvent(id: Long, timestamp: Long, value: Double, property: Int, plug_id: Long, household_id: Long, house_id: Long){
+case class SensorEvent(var id: Long,var  timestamp: Long, var value: Double, var property: Int, var plug_id: Long, var household_id: Long, var house_id: Long){
+
+  def adjustEventTimestamp(millis: Long) = {
+    this.timestamp = this.timestamp + (millis / 1000)
+  }
+
   override def toString: String = ToStringBuilder.reflectionToString(this)
   def getTimeMillis(): Long = this.timestamp*1000
 

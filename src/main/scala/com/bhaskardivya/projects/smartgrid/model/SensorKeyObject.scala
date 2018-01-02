@@ -4,6 +4,8 @@ import org.apache.sling.commons.json.JSONObject
 
 class SensorKeyObject(var house_id: Long, var household_id: Long, var plug_id: Long) extends Serializable{
 
+  override def toString: String = this.toColumnString()
+
   def toColumnString(): String = {
     val str: StringBuilder = new StringBuilder
 

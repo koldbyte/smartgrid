@@ -29,6 +29,7 @@ object SensorSourceJob {
     val data = params.get("input", "/data/data.gz")
     val maxServingDelay = params.getInt("maxServingDelay", 0)
     val servingSpeedFactor = params.getFloat("servingSpeedFactor", 1f)
+    val offsetEventTimestamp = params.has("offsetEventTimestamp")
 
     // Target parameters
     val kafkaBroker = params.get("kafkaBroker", "localhost:9092")
@@ -40,14 +41,16 @@ object SensorSourceJob {
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
     // Read from file
-    val events = env.addSource(new CSVFileSource(data, maxServingDelay, servingSpeedFactor)).name("CSV GZ File")
+    val events = env.addSource(new CSVFileSource(data, maxServingDelay, servingSpeedFactor, offsetEventTimestamp))
+      .name("CSV GZ File")
 
     // Write the generated data to a csv file
     if (debug)
       events.writeAsCsv("/data/output.csv", FileSystem.WriteMode.OVERWRITE)
 
     //Write to Kafka
-    events.addSink(new FlinkKafkaProducer011[SensorEvent](kafkaBroker, kafkaTopic, SensorEvent.schema(env.getConfig))).name("Kafka Topic Sensor_raw")
+    events.addSink(new FlinkKafkaProducer011[SensorEvent](kafkaBroker, kafkaTopic, SensorEvent.schema(env.getConfig)))
+      .name("Kafka Topic Sensor_raw")
 
     env.execute("Sensor Event Input Job (CSV to kafka)")
   }

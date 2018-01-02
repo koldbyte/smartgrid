@@ -17,5 +17,6 @@ object HouseAveragingJob extends SensorEventAveragingJobBase with Serializable{
     dataStream
       .keyBy("house_id", "timestamp")
       .sum("value")
+      .name("Aggregated by House Data")
   }
 }

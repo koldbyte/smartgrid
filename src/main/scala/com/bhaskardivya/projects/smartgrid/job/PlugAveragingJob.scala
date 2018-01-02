@@ -17,5 +17,6 @@ object PlugAveragingJob extends SensorEventAveragingJobBase with Serializable{
     dataStream
       .keyBy("house_id", "plug_id", "timestamp")
       .sum("value")
+      .name("Aggregated by Plug Data")
   }
 }

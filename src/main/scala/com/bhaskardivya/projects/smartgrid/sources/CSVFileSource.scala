@@ -48,8 +48,9 @@ import scala.collection.mutable
  * @param dataFilePath The path to the gzipped input file.
  * @param maxDelaySecs The maximum serving delay. Defines how much elements are served out-of-order.
  * @param servingSpeed The relative serving speed. Can be used to fast-forward the stream.
+ * @param offsetEventTimestamp to offset the old event time by making it closer to current time
  */
-class CSVFileSource(dataFilePath: String, maxDelaySecs: Int, servingSpeed: Float)
+class CSVFileSource(dataFilePath: String, maxDelaySecs: Int, servingSpeed: Float, offsetEventTimestamp: Boolean)
   extends SourceFunction[SensorEvent] {
 
   private val maxDelayMsecs = maxDelaySecs * 1000
@@ -103,6 +104,7 @@ class CSVFileSource(dataFilePath: String, maxDelaySecs: Int, servingSpeed: Float
     var dataStartTime = 0L
     var nextWatermark = 0L
     var nextWatermarkServingTime = 0L
+    var initialOffset = 0L
 
     // read the first sensor event
     if (reader.ready) {
@@ -112,8 +114,15 @@ class CSVFileSource(dataFilePath: String, maxDelaySecs: Int, servingSpeed: Float
         println("BD | CSVFileSource | First Line not null")
         val event = SensorEvent.fromString(line)
 
+        // set the initial offset and adjust the first record
+        if(offsetEventTimestamp) {
+          initialOffset = servingStartTime - event.getTimeMillis()
+          event.adjustEventTimestamp(initialOffset)
+        }
+
         // set time of first event
         dataStartTime = event.getTimeMillis()
+
         // initialize watermarks
         nextWatermark = dataStartTime + watermarkDelayMSecs
         nextWatermarkServingTime = toServingTime(servingStartTime, dataStartTime, nextWatermark)
@@ -135,6 +144,11 @@ class CSVFileSource(dataFilePath: String, maxDelaySecs: Int, servingSpeed: Float
         //println("BD | CSVFileSource | All | Line not null")
         // read event
         val event = SensorEvent.fromString(line)
+
+        // Adjust the timestamp
+        if(offsetEventTimestamp) {
+          event.adjustEventTimestamp(initialOffset)
+        }
 
         val eventTime = event.getTimeMillis()
         val now = Calendar.getInstance.getTimeInMillis
@@ -183,6 +197,7 @@ class CSVFileSource(dataFilePath: String, maxDelaySecs: Int, servingSpeed: Float
     val servingStartTime = Calendar.getInstance.getTimeInMillis
     var dataStartTime = 0L
     val rand: Random = new Random(7452)
+    var initialOffset = 0L
 
     val emitSchedule = mutable.PriorityQueue.empty[(Long, Either[SensorEvent, Watermark])](
       Ordering.by( (_: (Long, Either[SensorEvent, Watermark]))._1 ).reverse
@@ -195,6 +210,13 @@ class CSVFileSource(dataFilePath: String, maxDelaySecs: Int, servingSpeed: Float
       if (line != null) {
 
         event = SensorEvent.fromString(line)
+
+        // Set the initial offset and adjust the first record
+        if(offsetEventTimestamp) {
+          initialOffset = servingStartTime - event.getTimeMillis()
+          event.adjustEventTimestamp(initialOffset)
+        }
+
         dataStartTime = event.getTimeMillis()
 
         // schedule first event
@@ -214,6 +236,10 @@ class CSVFileSource(dataFilePath: String, maxDelaySecs: Int, servingSpeed: Float
       val line = reader.readLine
       if (line != null) {
         event = SensorEvent.fromString(line)
+        // Adjust the event time
+        if(offsetEventTimestamp) {
+          event.adjustEventTimestamp(initialOffset)
+        }
       }
     }
 
@@ -234,6 +260,12 @@ class CSVFileSource(dataFilePath: String, maxDelaySecs: Int, servingSpeed: Float
           val line = reader.readLine
           if (line != null) {
             event = SensorEvent.fromString(line)
+
+            // Adjust the event timestamp
+            if(offsetEventTimestamp) {
+              event.adjustEventTimestamp(initialOffset)
+            }
+
             sensorEventTime = event.getTimeMillis()
           } else {
             event = null
