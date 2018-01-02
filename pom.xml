@@ -43,8 +43,8 @@ under the License.
 		</repository>
         <repository>
             <id>clojars.snapshots</id>
-            <name></name>
-            <url>http://clojars.org/repo/orderly</url>
+            <name>clojars</name>
+            <url>http://clojars.org/repo/</url>
         </repository>
 	</repositories>
 
@@ -54,6 +54,7 @@ under the License.
 		<slf4j.version>1.7.7</slf4j.version>
 		<log4j.version>1.2.17</log4j.version>
 		<scala.binary.version>2.11</scala.binary.version>
+        <elasticsearch.version>5.1.2</elasticsearch.version>
 	</properties>
 
 	<!-- 
@@ -107,24 +108,54 @@ under the License.
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-hbase_${scala.binary.version}</artifactId>
-			<version>1.4.0</version>
+			<version>${flink.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>orderly</groupId>
+			<artifactId>orderly</artifactId>
+			<version>0.12.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.hbase</groupId>
+					<artifactId>hbase</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.google.guava</groupId>
+					<artifactId>guava</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
         <dependency>
-            <groupId>orderly</groupId>
-            <artifactId>orderly</artifactId>
-            <version>0.12.0</version>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch</artifactId>
+            <version>${elasticsearch.version}</version>
         </dependency>
-
 		<!-- Elastic search connector -->
-		<dependency>
+<!--		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-connector-elasticsearch5_${scala.binary.version}</artifactId>
-			<version>1.4.0</version>
-		</dependency>
-		<dependency>
+			<version>${flink.version}</version>
+		</dependency>-->
+<!--        <dependency>
+            <groupId>org.elasticsearch.plugin</groupId>
+            <artifactId>transport-netty4-client</artifactId>
+            <version>5.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch.plugin</groupId>
+            <artifactId>transport-netty3-client</artifactId>
+            <version>5.1.2</version>
+        </dependency>-->
+
+
+        <dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-shaded-hadoop2</artifactId>
-			<version>1.4.0</version>
+			<version>${flink.version}</version>
 			<scope>provided</scope>
 		</dependency>
 
@@ -177,7 +208,7 @@ under the License.
 				<dependency>
 					<groupId>org.apache.flink</groupId>
 					<artifactId>flink-hbase_${scala.binary.version}</artifactId>
-					<version>1.4.0</version>
+					<version>${flink.version}</version>
 				</dependency>
                 <dependency>
                     <groupId>orderly</groupId>
@@ -203,9 +234,32 @@ under the License.
 				<dependency>
 					<groupId>org.apache.flink</groupId>
 					<artifactId>flink-connector-elasticsearch5_${scala.binary.version}</artifactId>
-					<version>1.4.0</version>
+					<version>${flink.version}</version>
+                    <exclusions>
+                        <!-- Elasticsearch Java Client has been moved to a different module in 5.x -->
+                        <exclusion>
+                            <groupId>org.elasticsearch</groupId>
+                            <artifactId>elasticsearch</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>io.netty</groupId>
+                            <artifactId>netty</artifactId>
+                        </exclusion>
+                    </exclusions>
 				</dependency>
-				<dependency>
+                <!--<dependency>
+                    <groupId>org.elasticsearch.plugin</groupId>
+                    <artifactId>transport-netty4-client</artifactId>
+                    <version>5.1.2</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.elasticsearch.plugin</groupId>
+                    <artifactId>transport-netty3-client</artifactId>
+                    <version>5.1.2</version>
+                </dependency>-->
+
+
+                <dependency>
 					<groupId>org.slf4j</groupId>
 					<artifactId>slf4j-log4j12</artifactId>
 					<version>${slf4j.version}</version>
@@ -252,10 +306,79 @@ under the License.
 		except flink and its transitive dependencies. The resulting fat-jar can be executed
 		on a cluster. Change the value of Program-Class if your program entry point changes. -->
 	<build>
+
+
 		<plugins>
 			<!-- We use the maven-shade plugin to create a fat jar that contains all dependencies
 			except flink and it's transitive dependencies. The resulting fat-jar can be executed
 			on a cluster. Change the value of Program-Class if your program entry point changes. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.9</version>
+				<executions>
+					<execution>
+						<id>unpack</id>
+						<!-- executed just before the package phase -->
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<!-- For Flink connector classes -->
+                                <artifactItem>
+									<groupId>org.apache.flink</groupId>
+									<artifactId>flink-connector-kafka-0.11_${scala.binary.version}</artifactId>
+									<version>${flink.version}</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
+									<outputDirectory>${project.build.directory}/classes</outputDirectory>
+									<includes>org/apache/flink/**</includes>
+								</artifactItem>
+								<!-- For Kafka API classes -->
+								<artifactItem>
+									<groupId>org.apache.kafka</groupId>
+									<artifactId>kafka_2.11</artifactId>
+									<version>0.11.0.2</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
+									<outputDirectory>${project.build.directory}/classes</outputDirectory>
+									<includes>kafka/**</includes>
+								</artifactItem>
+
+								<artifactItem>
+									<groupId>org.apache.flink</groupId>
+									<artifactId>flink-connector-elasticsearch5_${scala.binary.version}</artifactId>
+									<version>${flink.version}</version>
+									<type>jar</type>
+									<overWrite>false</overWrite>
+									<outputDirectory>${project.build.directory}/classes</outputDirectory>
+									<includes>org/apache/flink/**</includes>
+								</artifactItem>
+                                <artifactItem>
+                                    <groupId>org.elasticsearch.client</groupId>
+                                    <artifactId>transport</artifactId>
+                                    <version>${elasticsearch.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>false</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                                    <includes>**</includes>
+                                </artifactItem>
+                                <!--<artifactItem>
+                                    <groupId>io.netty</groupId>
+                                    <artifactId>netty</artifactId>
+                                    <version>3.10.6.Final</version>
+                                    <type>jar</type>
+                                    <overWrite>false</overWrite>
+                                    <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                                    <includes>org.jboss.netty/**</includes>
+                                </artifactItem>-->
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
@@ -312,6 +435,17 @@ under the License.
 									<exclude>com.data-artisans:flakka-slf4j_*</exclude>
 									<exclude>io.netty:netty-all</exclude>
 									<exclude>io.netty:netty</exclude>
+									<!-- Added by BD -->
+									<!--<exclude>org.apache.flink:flink-connector-elasticsearch5_${scala.binary.version}</exclude>
+									<exclude>org.apache.flink:flink-connector-elasticsearch-base_${scala.binary.version}</exclude>
+									<exclude>org.apache.flink:flink-connector-elasticsearch*</exclude>
+									<exclude>io.netty:netty*</exclude>
+									<exclude>org.elasticsearch.plugin:transport-netty3-client</exclude>
+									<exclude>org.elasticsearch.plugin:transport-netty4-client</exclude>
+									<exclude>org.elasticsearch.*:*</exclude>
+									<exclude>org.elasticsearch:*</exclude>
+									<exclude>org.apache.lucene:*</exclude>-->
+									<!-- End - Added by BD -->
 									<exclude>commons-fileupload:commons-fileupload</exclude>
 									<exclude>org.apache.avro:avro</exclude>
 									<exclude>commons-collections:commons-collections</exclude>
@@ -334,9 +468,9 @@ under the License.
 									<exclude>org.apache.sling:org.apache.sling.commons.json</exclude>
 									<exclude>commons-logging:commons-logging</exclude>
 									<exclude>commons-codec:commons-codec</exclude>
-									<exclude>com.fasterxml.jackson.core:jackson-core</exclude>
+									<!--<exclude>com.fasterxml.jackson.core:jackson-core</exclude>
 									<exclude>com.fasterxml.jackson.core:jackson-databind</exclude>
-									<exclude>com.fasterxml.jackson.core:jackson-annotations</exclude>
+									<exclude>com.fasterxml.jackson.core:jackson-annotations</exclude>-->
 									<exclude>stax:stax-api</exclude>
 									<exclude>com.typesafe:config</exclude>
 									<exclude>org.uncommons.maths:uncommons-maths</exclude>
