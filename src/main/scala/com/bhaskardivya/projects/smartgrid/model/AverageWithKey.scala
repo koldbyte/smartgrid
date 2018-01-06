@@ -39,6 +39,11 @@ case class AverageWithKey(var key: SensorKeyObject, var sum: Double, var count: 
     averageValue
   }
 
+  def toHBaseLongColumnValue(): Long = {
+    //this.sum + Constants.DELIMITER + this.count
+    (averageValue * 1000).toLong
+  }
+
   def fromHBaseColumnValue(column: String, value: String): AverageWithKey = {
     //val fields = value.split(Constants.DELIMITER)
     //AverageWithKey(column, fields(0).toDouble, fields(2).toLong)

@@ -1,5 +1,6 @@
 package com.bhaskardivya.projects.smartgrid.base
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 import com.bhaskardivya.projects.smartgrid.model._
@@ -20,6 +21,8 @@ import org.apache.flink.streaming.api.windowing.time.Time
   * the load forecast
   */
 abstract class SensorEventAveragingJobBase extends Serializable {
+
+  private val LOG_DIR  = "/data/" + getKeyName()
 
   /**
     * Method that returns the name of the key in the source datum
@@ -56,6 +59,17 @@ abstract class SensorEventAveragingJobBase extends Serializable {
   }
 
   def main(args: Array[String]): Unit = {
+    //Create the log dirs
+    try {
+      new File(LOG_DIR).mkdir()
+      new File(LOG_DIR + "/input/").mkdir()
+      new File(LOG_DIR + "/output_avg/").mkdir()
+      new File(LOG_DIR + "/output_enriched/").mkdir()
+      new File(LOG_DIR + "/output_prediction/").mkdir()
+    } catch {
+      case e: Exception => println("Directories already created")
+    }
+
     // parse parameters
     val params = ParameterTool.fromArgs(args)
 
@@ -109,31 +123,31 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     // Write to file for debug
     val debug = params.has("debug")
     if (debug) {
-      initializedFlow.writeAsCsv("/data/output.initializedFlow.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Initialized Flow")
-      avg_windowed1min.writeAsCsv("/data/output.windowed1min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Avg windowed 1 Min")
-      avg_windowed5min.writeAsCsv("/data/output.windowed5min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Avg windowed 5 Min")
-      avg_windowed15min.writeAsCsv("/data/output.windowed15min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Avg windowed 15 Min")
-      avg_windowed60min.writeAsCsv("/data/output.windowed60min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Avg windowed 60 Min")
-      avg_windowed120min.writeAsCsv("/data/output.windowed120min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Avg windowed 120 Min")
+      initializedFlow.writeAsCsv(LOG_DIR + "/input/initializedFlow.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Initialized Flow")
+      avg_windowed1min.writeAsCsv(LOG_DIR + "/output_avg/windowed1min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Avg windowed 1 Min")
+      avg_windowed5min.writeAsCsv(LOG_DIR + "/output_avg/windowed5min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Avg windowed 5 Min")
+      avg_windowed15min.writeAsCsv(LOG_DIR + "/output_avg/windowed15min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Avg windowed 15 Min")
+      avg_windowed60min.writeAsCsv(LOG_DIR + "/output_avg/windowed60min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Avg windowed 60 Min")
+      avg_windowed120min.writeAsCsv(LOG_DIR + "/output_avg/windowed120min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Avg windowed 120 Min")
     }
 
     // Write to HBase for each window duration
-    avg_windowed1min.disableChaining().addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_1MIN, getTargetColumnFamily())))
+    avg_windowed1min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_1MIN, getTargetColumnFamily())))
       .name(getKeyName() + " Average - HBase - 1 Min Window")
 
-    avg_windowed5min.disableChaining().addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_5MIN, getTargetColumnFamily())))
+    avg_windowed5min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_5MIN, getTargetColumnFamily())))
       .name(getKeyName() + " Average - HBase - 5 Min Window")
 
-    avg_windowed15min.disableChaining().addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_15MIN, getTargetColumnFamily())))
+    avg_windowed15min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_15MIN, getTargetColumnFamily())))
       .name(getKeyName() + " Average - HBase - 15 Min Window")
 
-    avg_windowed60min.disableChaining().addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_60MIN, getTargetColumnFamily())))
+    avg_windowed60min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_60MIN, getTargetColumnFamily())))
       .name(getKeyName() + " Average - HBase - 60 Min Window")
 
-    avg_windowed120min.disableChaining().addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_120MIN, getTargetColumnFamily())))
+    avg_windowed120min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_120MIN, getTargetColumnFamily())))
       .name(getKeyName() + " Average - HBase - 120 Min Window")
 
-    val timeout = params.getLong("timeout", 300000L) // 300 seconds timeout
+    val timeout = params.getLong("timeout", 3000000L) // 300 seconds timeout
 
     // Enrich the average calculation with the median value for each stream of different window duration
     val windowed1min_enriched: DataStream[(AverageWithKey, MedianLoad)] = AsyncDataStream.orderedWait(
@@ -187,11 +201,11 @@ abstract class SensorEventAveragingJobBase extends Serializable {
       .name(getKeyName() + " Enriched - 120 Min Window")
 
     if (debug) {
-      windowed1min_enriched.writeAsCsv("/data/output.windowed1min_enriched.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Enriched 1 Min Window")
-      windowed5min_enriched.writeAsCsv("/data/output.windowed5min_enriched.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Enriched 5 Min Window")
-      windowed15min_enriched.writeAsCsv("/data/output.windowed15min_enriched.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Enriched 15 Min Window")
-      windowed60min_enriched.writeAsCsv("/data/output.windowed60min_enriched.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Enriched 60 Min Window")
-      windowed120min_enriched.writeAsCsv("/data/output.windowed120min_enriched.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Enriched 120 Min Window")
+      windowed1min_enriched.writeAsCsv(LOG_DIR + "/output_enriched/windowed1min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Enriched 1 Min Window")
+      windowed5min_enriched.writeAsCsv(LOG_DIR + "/output_enriched/windowed5min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Enriched 5 Min Window")
+      windowed15min_enriched.writeAsCsv(LOG_DIR + "/output_enriched/windowed15min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Enriched 15 Min Window")
+      windowed60min_enriched.writeAsCsv(LOG_DIR + "/output_enriched/windowed60min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Enriched 60 Min Window")
+      windowed120min_enriched.writeAsCsv(LOG_DIR + "/output_enriched/windowed120min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Enriched 120 Min Window")
     }
 
     // Create the predicted value streams
@@ -232,16 +246,15 @@ abstract class SensorEventAveragingJobBase extends Serializable {
       .name(getKeyName() + " Prediction Sink - ES - 120 min Window")
 
     if (debug) {
-      windowed1min_prediction.writeAsCsv("/data/output.windowed1min_prediction.csv", FileSystem.WriteMode.OVERWRITE)
-      windowed5min_prediction.writeAsCsv("/data/output.windowed5min_prediction.csv", FileSystem.WriteMode.OVERWRITE)
-      windowed15min_prediction.writeAsCsv("/data/output.windowed15min_prediction.csv", FileSystem.WriteMode.OVERWRITE)
-      windowed60min_prediction.writeAsCsv("/data/output.windowed60min_prediction.csv", FileSystem.WriteMode.OVERWRITE)
-      windowed120min_prediction.writeAsCsv("/data/output.windowed120min_prediction.csv", FileSystem.WriteMode.OVERWRITE)
+      windowed1min_prediction.writeAsCsv(LOG_DIR + "/output_prediction/windowed1min.csv", FileSystem.WriteMode.OVERWRITE)
+      windowed5min_prediction.writeAsCsv(LOG_DIR + "/output_prediction/windowed5min.csv", FileSystem.WriteMode.OVERWRITE)
+      windowed15min_prediction.writeAsCsv(LOG_DIR + "/output_prediction/windowed15min.csv", FileSystem.WriteMode.OVERWRITE)
+      windowed60min_prediction.writeAsCsv(LOG_DIR + "/output_prediction/windowed60min.csv", FileSystem.WriteMode.OVERWRITE)
+      windowed120min_prediction.writeAsCsv(LOG_DIR + "/output_prediction/windowed120min.csv", FileSystem.WriteMode.OVERWRITE)
     }
 
     //Sink the original feed into ES as well
     initializedFlow
-      .startNewChain()
       .addSink(SensorEventElasticSearchSink(params, Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_RAW))
       .name("Sensor Raw to ES")
 
