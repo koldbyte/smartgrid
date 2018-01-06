@@ -1,0 +1,9 @@
+services:
+  kafka_manager:
+    image: hlebalbau/kafka-manager
+    ports:
+      - "9000:9000"
+    environment:
+      ZK_HOSTS: "zoo:2181"
+      APPLICATION_SECRET: "random-secret"
+    command: -Dpidfile.path=/dev/null

@@ -1,0 +1,36 @@
+disable 'table1min'
+drop 'table1min'
+disable 'table5min'
+drop 'table5min'
+disable 'table15min'    
+drop 'table15min'
+disable 'table60min'
+drop 'table60min'
+disable 'table120min'
+drop 'table120min'
+
+create 'table1min', {NAME=> 'house_avg', IN_MEMORY=>'true', BLOOMFILTER=>'ROWCOL'}, {NAME=>'plug_avg', IN_MEMORY=>'true', BLOOMFILTER=>'ROWCOL'}
+create 'table5min', {NAME=> 'house_avg', IN_MEMORY=>'true', BLOOMFILTER=>'ROWCOL'}, {NAME=>'plug_avg', IN_MEMORY=>'true', BLOOMFILTER=>'ROWCOL'}
+create 'table15min', {NAME=> 'house_avg', IN_MEMORY=>'true', BLOOMFILTER=>'ROWCOL'}, {NAME=>'plug_avg', IN_MEMORY=>'true', BLOOMFILTER=>'ROWCOL'}
+create 'table60min', {NAME=> 'house_avg', IN_MEMORY=>'true', BLOOMFILTER=>'ROWCOL'}, {NAME=>'plug_avg', IN_MEMORY=>'true', BLOOMFILTER=>'ROWCOL'}
+create 'table120min', {NAME=> 'house_avg', IN_MEMORY=>'true', BLOOMFILTER=>'ROWCOL'}, {NAME=>'plug_avg', IN_MEMORY=>'true', BLOOMFILTER=>'ROWCOL'}
+
+disable 'table1min'
+alter 'table1min', METHOD => 'table_att', 'coprocessor' => '|org.apache.hadoop.hbase.coprocessor.AggregateImplementation||'
+enable 'table1min'
+
+disable 'table5min'
+alter 'table5min', METHOD => 'table_att', 'coprocessor' => '|org.apache.hadoop.hbase.coprocessor.AggregateImplementation||'
+enable 'table5min'
+
+disable 'table15min'
+alter 'table15min', METHOD => 'table_att', 'coprocessor' => '|org.apache.hadoop.hbase.coprocessor.AggregateImplementation||'
+enable 'table15min'
+
+disable 'table60min'
+alter 'table60min', METHOD => 'table_att', 'coprocessor' => '|org.apache.hadoop.hbase.coprocessor.AggregateImplementation||'
+enable 'table60min'
+
+disable 'table120min'
+alter 'table120min', METHOD => 'table_att', 'coprocessor' => '|org.apache.hadoop.hbase.coprocessor.AggregateImplementation||'
+enable 'table120min'
