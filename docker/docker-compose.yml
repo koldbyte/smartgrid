@@ -3,24 +3,24 @@ services:
   flink-kafka-hbase:
     extends:
       service: flink-kafka-hbase
-      file: ./Flink-Hbase-Kafka
+      file: ./Flink-Hbase-Kafka/docker-compose.yml
 
   elasticsearch:
     extends:
       service: elasticsearch
-      file: ./elasticsearch
+      file: ./elasticsearch/docker-compose.yml
 
   elasticsearch2:
     extends:
       service: elasticsearch2
-      file: ./elasticsearch
+      file: ./elasticsearch/docker-compose.yml
 
   kibana:
     extends:
       service: kibana
-      file: ./kibana
+      file: ./kibana/docker-compose.yml
 
   kafka-manager:
     extends:
       service: kafka-manager
-      file: ./kafka-manager
+      file: ./kafka-manager/docker-compose.yml
