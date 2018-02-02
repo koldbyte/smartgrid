@@ -1,16 +1,13 @@
-
 version: '2.1'
 services:
-#Flink + Kafka + Hbase + Zookeeper
   flink-kafka-hbase:
-    image: 
-    container
-# Elasticsearch
+    build: ./Flink-Hbase-Kafka
+
   elasticsearch:
+    build: ./elasticsearch
 
-# Kibana
   kibana:
+    build: ./kibana
 
-# Kafka-manager
   kafka-manager:
-    
+    build: ./kafka-manager
