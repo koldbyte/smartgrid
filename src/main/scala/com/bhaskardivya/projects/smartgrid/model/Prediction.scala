@@ -5,7 +5,7 @@ import java.util.Date
 import org.apache.sling.commons.json.JSONObject
 
 
-case class Prediction(averageWithKey: AverageWithKey, medianLoad: MedianLoad, key: String, slidingWindow: Long, predictedValue: Double){
+case class Prediction(averageWithKey: AverageWithKey, medianLoad: MedianLoadWithKey, key: String, slidingWindow: Long, predictedValue: Double){
 
   def toJSONString(): String = {
     toJSON().toString()
@@ -23,9 +23,9 @@ case class Prediction(averageWithKey: AverageWithKey, medianLoad: MedianLoad, ke
     averageWithKeyJSON.put("eventTimestamp", averageWithKey.eventTimestamp)
     json.put("averageWithKey", averageWithKeyJSON)
 
-    //mediaLoad
+    //medianLoad
     val medianLoadJSON = new JSONObject()
-    medianLoadJSON.put("load", medianLoad.load)
+    medianLoadJSON.put("load", medianLoad.medianLoad)
     json.put("medianLoad", medianLoadJSON)
 
     //key or entity

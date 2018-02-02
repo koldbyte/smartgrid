@@ -1,16 +1,14 @@
 package com.bhaskardivya.projects.smartgrid.base
 
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 import com.bhaskardivya.projects.smartgrid.model._
-import com.bhaskardivya.projects.smartgrid.operators.{AverageAggregateWithKey, HBaseAsyncFunction, PredictionFunction}
+import com.bhaskardivya.projects.smartgrid.operators.{AverageAggregateWithKey, MedianAggregateWithKey, PredictionFunction}
 import com.bhaskardivya.projects.smartgrid.pipeline._
-import com.bhaskardivya.projects.smartgrid.sinks.{HBaseOutputFormatAverageWithKey, PredictionElasticSearchSink, SensorEventElasticSearchSink}
+import com.bhaskardivya.projects.smartgrid.sinks.{PredictionElasticSearchSink, SensorEventElasticSearchSink}
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.core.fs.FileSystem
 import org.apache.flink.streaming.api.TimeCharacteristic
-import org.apache.flink.streaming.api.functions.sink.OutputFormatSinkFunction
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows
 import org.apache.flink.streaming.api.windowing.time.Time
@@ -131,72 +129,76 @@ abstract class SensorEventAveragingJobBase extends Serializable {
       avg_windowed120min.writeAsCsv(LOG_DIR + "/output_avg/windowed120min.csv", FileSystem.WriteMode.OVERWRITE).name("Debug Avg windowed 120 Min")
     }
 
-    // Write to HBase for each window duration
-    avg_windowed1min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_1MIN, getTargetColumnFamily())))
-      .name(getKeyName() + " Average - HBase - 1 Min Window")
+    val median_windowed1min = avg_windowed1min
+      .keyBy(_.key)
+      .window(SlidingEventTimeWindows.of(Time.minutes(1), Time.seconds(Constants.SLIDING_INTERVAL)))
+      .aggregate(new MedianAggregateWithKey)
+      .name(getKeyName() + "Median for 1 min Window")
 
-    avg_windowed5min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_5MIN, getTargetColumnFamily())))
-      .name(getKeyName() + " Average - HBase - 5 Min Window")
+    val median_windowed5min = median_windowed1min
+      .keyBy(_.key)
+      .window(SlidingEventTimeWindows.of(Time.minutes(5), Time.seconds(Constants.SLIDING_INTERVAL)))
+      .reduce(MedianLoadWithKey.reducer)
+      .name(getKeyName() + "Median for 5 min Window")
 
-    avg_windowed15min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_15MIN, getTargetColumnFamily())))
-      .name(getKeyName() + " Average - HBase - 15 Min Window")
+    val median_windowed15min = median_windowed5min
+      .keyBy(_.key)
+      .window(SlidingEventTimeWindows.of(Time.minutes(15), Time.seconds(Constants.SLIDING_INTERVAL)))
+      .reduce(MedianLoadWithKey.reducer)
+      .name(getKeyName() + "Median for 15 min Window")
 
-    avg_windowed60min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_60MIN, getTargetColumnFamily())))
-      .name(getKeyName() + " Average - HBase - 60 Min Window")
+    val median_windowed60min = median_windowed15min
+      .keyBy(_.key)
+      .window(SlidingEventTimeWindows.of(Time.minutes(60), Time.seconds(Constants.SLIDING_INTERVAL)))
+      .reduce(MedianLoadWithKey.reducer)
+      .name(getKeyName() + "Median for 60 min Window")
 
-    avg_windowed120min.addSink(new OutputFormatSinkFunction[AverageWithKey](new HBaseOutputFormatAverageWithKey().of(Constants.TABLE_120MIN, getTargetColumnFamily())))
-      .name(getKeyName() + " Average - HBase - 120 Min Window")
+    val median_windowed120min = median_windowed60min
+      .keyBy(_.key)
+      .window(SlidingEventTimeWindows.of(Time.minutes(120), Time.seconds(Constants.SLIDING_INTERVAL)))
+      .reduce(MedianLoadWithKey.reducer)
+      .name(getKeyName() + "Median for 120 min Window")
 
     val timeout = params.getLong("timeout", 3000000L) // 300 seconds timeout
 
     // Enrich the average calculation with the median value for each stream of different window duration
-    val windowed1min_enriched: DataStream[(AverageWithKey, MedianLoad)] = AsyncDataStream.orderedWait(
-      avg_windowed1min,
-      new HBaseAsyncFunction(Constants.TABLE_1MIN, getTargetColumnFamily()),
-      timeout,
-      TimeUnit.MILLISECONDS,
-      1
-    )
+    val windowed1min_enriched: DataStream[(AverageWithKey, MedianLoadWithKey)] = avg_windowed1min
+      .join(median_windowed1min)
+      .where(_.key).equalTo(_.key)
+      .window(SlidingEventTimeWindows.of(Time.minutes(1), Time.seconds(Constants.SLIDING_INTERVAL)))
+      .apply((_, _))
       .startNewChain()
       .name(getKeyName() + " Enriched - 1 Min Window")
 
-    val windowed5min_enriched: DataStream[(AverageWithKey, MedianLoad)] = AsyncDataStream.orderedWait(
-      avg_windowed5min,
-      new HBaseAsyncFunction(Constants.TABLE_5MIN, getTargetColumnFamily()),
-      timeout,
-      TimeUnit.MILLISECONDS,
-      1
-    )
+    val windowed5min_enriched: DataStream[(AverageWithKey, MedianLoadWithKey)] = avg_windowed5min
+      .join(median_windowed5min)
+      .where(_.key).equalTo(_.key)
+      .window(SlidingEventTimeWindows.of(Time.minutes(5), Time.seconds(Constants.SLIDING_INTERVAL)))
+      .apply((_, _))
       .startNewChain()
       .name(getKeyName() + " Enriched - 5 Min Window")
 
-    val windowed15min_enriched: DataStream[(AverageWithKey, MedianLoad)] = AsyncDataStream.orderedWait(
-      avg_windowed15min,
-      new HBaseAsyncFunction(Constants.TABLE_15MIN, getTargetColumnFamily()),
-      timeout,
-      TimeUnit.MILLISECONDS,
-      1
-    )
+    val windowed15min_enriched: DataStream[(AverageWithKey, MedianLoadWithKey)] = avg_windowed15min
+      .join(median_windowed15min)
+      .where(_.key).equalTo(_.key)
+      .window(SlidingEventTimeWindows.of(Time.minutes(15), Time.seconds(Constants.SLIDING_INTERVAL)))
+      .apply((_, _))
       .startNewChain()
       .name(getKeyName() + " Enriched - 15 Min Window")
 
-    val windowed60min_enriched: DataStream[(AverageWithKey, MedianLoad)] = AsyncDataStream.orderedWait(
-      avg_windowed60min,
-      new HBaseAsyncFunction(Constants.TABLE_60MIN, getTargetColumnFamily()),
-      timeout,
-      TimeUnit.MILLISECONDS,
-      1
-    )
+    val windowed60min_enriched: DataStream[(AverageWithKey, MedianLoadWithKey)] = avg_windowed60min
+      .join(median_windowed60min)
+      .where(_.key).equalTo(_.key)
+      .window(SlidingEventTimeWindows.of(Time.minutes(60), Time.seconds(Constants.SLIDING_INTERVAL)))
+      .apply((_, _))
       .startNewChain()
       .name(getKeyName() + " Enriched - 60 Min Window")
 
-    val windowed120min_enriched: DataStream[(AverageWithKey, MedianLoad)] = AsyncDataStream.orderedWait(
-      avg_windowed120min,
-      new HBaseAsyncFunction(Constants.TABLE_120MIN, getTargetColumnFamily()),
-      timeout,
-      TimeUnit.MILLISECONDS,
-      1
-    )
+    val windowed120min_enriched: DataStream[(AverageWithKey, MedianLoadWithKey)] = avg_windowed120min
+      .join(median_windowed120min)
+      .where(_.key).equalTo(_.key)
+      .window(SlidingEventTimeWindows.of(Time.minutes(120), Time.seconds(Constants.SLIDING_INTERVAL)))
+      .apply((_, _))
       .startNewChain()
       .name(getKeyName() + " Enriched - 120 Min Window")
 
