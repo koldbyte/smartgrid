@@ -17,8 +17,8 @@ services:
 
   kibana:
     extends:
-      service:
-    build: ./kibana
+      service: kibana
+      file: ./kibana
 
   kafka-manager:
     extends:
