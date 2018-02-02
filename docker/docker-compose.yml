@@ -20,7 +20,7 @@ services:
       service: kibana
       file: ./kibana/docker-compose.yml
 
-  kafka-manager:
+  kafka_manager:
     extends:
-      service: kafka-manager
+      service: kafka_manager
       file: ./kafka-manager/docker-compose.yml
