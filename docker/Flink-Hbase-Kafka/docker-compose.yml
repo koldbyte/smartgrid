@@ -22,3 +22,7 @@ services:
       KAFKA_ADVERTISED_HOST_NAME: 192.168.99.100
     volumes:
       - /data
+    external_links:
+      - elasticsearch
+      - kibana
+      - kafka-manager

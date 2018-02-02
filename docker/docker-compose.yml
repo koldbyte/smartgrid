@@ -1,13 +1,26 @@
 version: '2.1'
 services:
   flink-kafka-hbase:
-    build: ./Flink-Hbase-Kafka
+    extends:
+      service: flink-kafka-hbase
+      file: ./Flink-Hbase-Kafka
 
   elasticsearch:
-    build: ./elasticsearch
+    extends:
+      service: elasticsearch
+      file: ./elasticsearch
+
+  elasticsearch2:
+    extends:
+      service: elasticsearch2
+      file: ./elasticsearch
 
   kibana:
+    extends:
+      service:
     build: ./kibana
 
   kafka-manager:
-    build: ./kafka-manager
+    extends:
+      service: kafka-manager
+      file: ./kafka-manager

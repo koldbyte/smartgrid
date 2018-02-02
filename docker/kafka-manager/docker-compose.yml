@@ -1,6 +1,7 @@
 services:
   kafka_manager:
     image: hlebalbau/kafka-manager
+    container_name: kafka-manager
     ports:
       - "9000:9000"
     environment:
