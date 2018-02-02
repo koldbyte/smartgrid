@@ -1,4 +1,4 @@
-version: '2'
+version: '2.1'
 services:
   kibana:
     image: kibana:5.1.2

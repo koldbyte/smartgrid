@@ -1,54 +1,56 @@
-elasticsearch:
-  image: docker.elastic.co/elasticsearch/elasticsearch:5.1.2
-  ports:
-    - 9200:9200
-    - 9300:9300
-  container_name: elasticsearch
-  ulimits:
-    memlock:
-      soft: -1
-      hard: -1
-  mem_limit: 1g
-  environment:
-    - cluster.name=docker-cluster
-    - node.name=one
-    - bootstrap.memory_lock=false
-    - xpack.security.enabled=false
-    - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    - network.publish_host=192.168.99.100
-    - transport.publish_port=9300
-    - transport.host=0.0.0.0
-    - transport.tcp.port=9300
-    - network.host=0.0.0.0
-    - http.host=0.0.0.0
-    - http.port=9200
-  volumes:
-    - /usr/share/elasticsearch/data
+version: '2.1'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.1.2
+    ports:
+      - 9200:9200
+      - 9300:9300
+    container_name: elasticsearch
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 1g
+    environment:
+      - cluster.name=docker-cluster
+      - node.name=one
+      - bootstrap.memory_lock=false
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - network.publish_host=192.168.99.100
+      - transport.publish_port=9300
+      - transport.host=0.0.0.0
+      - transport.tcp.port=9300
+      - network.host=0.0.0.0
+      - http.host=0.0.0.0
+      - http.port=9200
+    volumes:
+      - /usr/share/elasticsearch/data
 
-elasticsearch2:
-  image: docker.elastic.co/elasticsearch/elasticsearch:5.1.2
-  ports:
-    - 9201:9200
-    - 9301:9300
-  container_name: elasticsearch2
-  ulimits:
-    memlock:
-      soft: -1
-      hard: -1
-  mem_limit: 1g
-  environment:
-    - cluster.name=docker-cluster
-    - node.name=two
-    - bootstrap.memory_lock=false
-    - xpack.security.enabled=false
-    - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    - network.publish_host=192.168.99.100
-    - transport.publish_port=9301
-    - "discovery.zen.ping.unicast.hosts=192.168.99.100"
-    - "discovery.zen.minimum_master_nodes=2"
-    - network.host=0.0.0.0
-    - transport.host=0.0.0.0
-    - transport.tcp.port=9300
-    - http.host=0.0.0.0
-  volumes:
-    - /usr/share/elasticsearch/data
+  elasticsearch2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.1.2
+    ports:
+      - 9201:9200
+      - 9301:9300
+    container_name: elasticsearch2
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 1g
+    environment:
+      - cluster.name=docker-cluster
+      - node.name=two
+      - bootstrap.memory_lock=false
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - network.publish_host=192.168.99.100
+      - transport.publish_port=9301
+      - "discovery.zen.ping.unicast.hosts=192.168.99.100"
+      - "discovery.zen.minimum_master_nodes=2"
+      - network.host=0.0.0.0
+      - transport.host=0.0.0.0
+      - transport.tcp.port=9300
+      - http.host=0.0.0.0
+    volumes:
+      - /usr/share/elasticsearch/data

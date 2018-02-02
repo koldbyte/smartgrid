@@ -1,3 +1,4 @@
+version: '2.1'
 services:
   flink-kafka-hbase:
     image: quay.io/koldbyte/flink-cluster
