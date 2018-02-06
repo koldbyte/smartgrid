@@ -20,7 +20,7 @@ services:
       - 8081:8081
       - 8090:8090
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: 192.168.99.100
+      KAFKA_ADVERTISED_HOST_NAME: localhost
     volumes:
       - /data
     external_links:
