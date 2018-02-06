@@ -7,7 +7,7 @@ services:
     networks:
       - smartgrid
     volumes:
-      - "/data" : /app/smartgrid/data
+      - /app/smartgrid/data:/data
 
   elasticsearch:
     extends:
@@ -16,7 +16,7 @@ services:
     networks:
       - smartgrid
     volumes:
-      - "/usr/share/elasticsearch/data" : /app/smartgrid/es-data
+      - /app/smartgrid/es-data:/usr/share/elasticsearch/data
 
   elasticsearch2:
     extends:
@@ -25,7 +25,7 @@ services:
     networks:
       - smartgrid
     volumes:
-      - "/usr/share/elasticsearch/data" : /app/smartgrid/es-data-2
+      - /app/smartgrid/es-data-2:/usr/share/elasticsearch/data
 
   kibana:
     extends:
