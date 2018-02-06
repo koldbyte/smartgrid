@@ -42,4 +42,6 @@ services:
       - smartgrid
 
 networks:
-  smartgrid
+  smartgrid:
+    driver: bridge
+    enable_ipv6: true
