@@ -4,23 +4,42 @@ services:
     extends:
       service: flink-kafka-hbase
       file: ./Flink-Hbase-Kafka/docker-compose.yml
+    networks:
+      - smartgrid
+    volumes:
+      - "/data" : /app/smartgrid/data
 
   elasticsearch:
     extends:
       service: elasticsearch
       file: ./elasticsearch/docker-compose.yml
+    networks:
+      - smartgrid
+    volumes:
+      - "/usr/share/elasticsearch/data" : /app/smartgrid/es-data
 
   elasticsearch2:
     extends:
       service: elasticsearch2
       file: ./elasticsearch/docker-compose.yml
+    networks:
+      - smartgrid
+    volumes:
+      - "/usr/share/elasticsearch/data" : /app/smartgrid/es-data-2
 
   kibana:
     extends:
       service: kibana
       file: ./kibana/docker-compose.yml
+    networks:
+      - smartgrid
 
   kafka_manager:
     extends:
       service: kafka_manager
       file: ./kafka-manager/docker-compose.yml
+    networks:
+      - smartgrid
+
+networks:
+  smartgrid
