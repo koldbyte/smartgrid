@@ -7,6 +7,6 @@ services:
     ports:
       - "9000:9000"
     environment:
-      ZK_HOSTS: "localhost:2181/kafka"
+      ZK_HOSTS: "hbase-docker:2181/kafka"
       APPLICATION_SECRET: "random-secret"
     command: -Dpidfile.path=/dev/null

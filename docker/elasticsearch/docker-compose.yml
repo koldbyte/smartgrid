@@ -46,13 +46,14 @@ services:
       - bootstrap.memory_lock=false
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - network.publish_host=elasticsearch
-      - transport.publish_port=9301
+      - network.publish_host=elasticsearch2
+      - transport.publish_port=9300
       - "discovery.zen.ping.unicast.hosts=elasticsearch"
       - "discovery.zen.minimum_master_nodes=2"
       - network.host=0.0.0.0
       - transport.host=0.0.0.0
       - transport.tcp.port=9300
       - http.host=0.0.0.0
+      - http.port=9200
     volumes:
       - /usr/share/elasticsearch/data
