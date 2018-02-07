@@ -9,6 +9,9 @@ services:
       - smartgrid.com
     volumes:
       - /app/smartgrid/data:/data
+    links:
+      - elasticsearch
+      - elasticsearch2
 
   elasticsearch:
     domainname: smartgrid.com
@@ -39,9 +42,12 @@ services:
       - smartgrid.com
     depends_on:
       - elasticsearch
+    links:
+      - elasticsearch
+      - elasticsearch2
 
   kafka_manager:
-      domainname: smartgrid.com
+    domainname: smartgrid.com
     extends:
       service: kafka_manager
       file: ./kafka-manager/docker-compose.yml
@@ -49,7 +55,11 @@ services:
       - smartgrid.com
     depends_on:
       - flink-kafka-hbase
+    links:
+      - flink-kafka-hbase
+      - "flink-kafka-hbase:hbase-docker"
 
 networks:
   smartgrid.com:
     driver: bridge
+    name: smartgrid.com

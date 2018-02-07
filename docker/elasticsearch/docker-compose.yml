@@ -18,7 +18,7 @@ services:
       - bootstrap.memory_lock=false
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - network.publish_host=localhost
+      - network.publish_host=elasticsearch
       - transport.publish_port=9300
       - transport.host=0.0.0.0
       - transport.tcp.port=9300
@@ -46,9 +46,9 @@ services:
       - bootstrap.memory_lock=false
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - network.publish_host=localhost
+      - network.publish_host=elasticsearch
       - transport.publish_port=9301
-      - "discovery.zen.ping.unicast.hosts=localhost"
+      - "discovery.zen.ping.unicast.hosts=elasticsearch"
       - "discovery.zen.minimum_master_nodes=2"
       - network.host=0.0.0.0
       - transport.host=0.0.0.0
