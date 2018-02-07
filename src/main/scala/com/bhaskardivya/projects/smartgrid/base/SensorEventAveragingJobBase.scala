@@ -92,31 +92,31 @@ abstract class SensorEventAveragingJobBase extends Serializable {
       .keyBy(keyGetter(_))
       .window(SlidingEventTimeWindows.of(Time.minutes(1), Time.seconds(Constants.SLIDING_INTERVAL)))
       .aggregate(new AverageAggregateWithKey(keyGetter))
-      .name(getKeyName() + "Average for 1 min Window")
+      .name(getKeyName() + " Average for 1 min Window")
 
     val avg_windowed5min = avg_windowed1min
       .keyBy(_.key)
       .window(SlidingEventTimeWindows.of(Time.minutes(5), Time.seconds(Constants.SLIDING_INTERVAL)))
       .reduce(AverageWithKey.reducer)
-      .name(getKeyName() + "Average for 5 min Window")
+      .name(getKeyName() + " Average for 5 min Window")
 
     val avg_windowed15min = avg_windowed5min
       .keyBy(_.key)
       .window(SlidingEventTimeWindows.of(Time.minutes(15), Time.seconds(Constants.SLIDING_INTERVAL)))
       .reduce(AverageWithKey.reducer)
-      .name(getKeyName() + "Average for 15 min Window")
+      .name(getKeyName() + " Average for 15 min Window")
 
     val avg_windowed60min = avg_windowed15min
       .keyBy(_.key)
       .window(SlidingEventTimeWindows.of(Time.minutes(60), Time.seconds(Constants.SLIDING_INTERVAL)))
       .reduce(AverageWithKey.reducer)
-      .name(getKeyName() + "Average for 60 min Window")
+      .name(getKeyName() + " Average for 60 min Window")
 
     val avg_windowed120min = avg_windowed60min
       .keyBy(_.key)
       .window(SlidingEventTimeWindows.of(Time.minutes(120), Time.seconds(Constants.SLIDING_INTERVAL)))
       .reduce(AverageWithKey.reducer)
-      .name(getKeyName() + "Average for 120 min Window")
+      .name(getKeyName() + " Average for 120 min Window")
 
     // Write to file for debug
     val debug = params.has("debug")
@@ -133,31 +133,31 @@ abstract class SensorEventAveragingJobBase extends Serializable {
       .keyBy(_.key)
       .window(SlidingEventTimeWindows.of(Time.minutes(1), Time.seconds(Constants.SLIDING_INTERVAL)))
       .aggregate(new MedianAggregateWithKey)
-      .name(getKeyName() + "Median for 1 min Window")
+      .name(getKeyName() + " Median for 1 min Window")
 
     val median_windowed5min = median_windowed1min
       .keyBy(_.key)
       .window(SlidingEventTimeWindows.of(Time.minutes(5), Time.seconds(Constants.SLIDING_INTERVAL)))
       .reduce(MedianLoadWithKey.reducer)
-      .name(getKeyName() + "Median for 5 min Window")
+      .name(getKeyName() + " Median for 5 min Window")
 
     val median_windowed15min = median_windowed5min
       .keyBy(_.key)
       .window(SlidingEventTimeWindows.of(Time.minutes(15), Time.seconds(Constants.SLIDING_INTERVAL)))
       .reduce(MedianLoadWithKey.reducer)
-      .name(getKeyName() + "Median for 15 min Window")
+      .name(getKeyName() + " Median for 15 min Window")
 
     val median_windowed60min = median_windowed15min
       .keyBy(_.key)
       .window(SlidingEventTimeWindows.of(Time.minutes(60), Time.seconds(Constants.SLIDING_INTERVAL)))
       .reduce(MedianLoadWithKey.reducer)
-      .name(getKeyName() + "Median for 60 min Window")
+      .name(getKeyName() + " Median for 60 min Window")
 
     val median_windowed120min = median_windowed60min
       .keyBy(_.key)
       .window(SlidingEventTimeWindows.of(Time.minutes(120), Time.seconds(Constants.SLIDING_INTERVAL)))
       .reduce(MedianLoadWithKey.reducer)
-      .name(getKeyName() + "Median for 120 min Window")
+      .name(getKeyName() + " Median for 120 min Window")
 
     val timeout = params.getLong("timeout", 3000000L) // 300 seconds timeout
 
@@ -256,9 +256,11 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     }
 
     //Sink the original feed into ES as well
-    initializedFlow
-      .addSink(SensorEventElasticSearchSink(params, Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_RAW))
-      .name("Sensor Raw to ES")
+    if(debug) {
+      initializedFlow
+        .addSink(SensorEventElasticSearchSink(params, Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_RAW))
+        .name("Sensor Raw to ES")
+    }
 
     env.execute("Sensor Event" + getKeyName() + " Prediction Job (Kafka to HBase Averages + Prediction to ES)")
 
