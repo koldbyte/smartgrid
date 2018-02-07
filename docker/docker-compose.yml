@@ -53,6 +53,8 @@ services:
       file: ./kafka-manager/docker-compose.yml
     networks:
       - smartgrid.com
+    volumes:
+      - /app/smartgrid/kafka-manager:/kafka-manager/configuration
     depends_on:
       - flink-kafka-hbase
     links:
