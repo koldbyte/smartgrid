@@ -13,10 +13,11 @@ object PlugAveragingJob extends SensorEventAveragingJobBase with Serializable{
   override def getTargetColumnFamily(): String = Constants.PLUG_CF
 
   override def initializeFlow(dataStream: DataStream[SensorEvent]) = {
-    // Sum all the multiple values with the same timestamp for a given plug of a given house
+    // De-duplicate values with the same timestamp for a given plug of a given house
     dataStream
-      .keyBy("house_id", "plug_id", "timestamp")
-      .sum("value")
-      .name("Aggregated by Plug Data")
+      .filter(_.property == Constants.PROPERTY_LOAD)
+      .keyBy("house_id", "household_id" , "plug_id", "timestamp")
+      .reduce((a,b) => b)
+      .name("De-duplicated Raw stream")
   }
 }

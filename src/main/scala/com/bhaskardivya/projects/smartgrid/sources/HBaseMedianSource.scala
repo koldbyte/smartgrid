@@ -28,23 +28,23 @@ object HBaseMedianSource extends Serializable{
     val scan = new Scan()
     if (avg != null && avg.key != null) {
       println("HBaseMedianSource | getMedian | ColumnQualifier is set")
-      scan.addColumn(columnFamily.getBytes(), avg.key.toColumnString().getBytes())
+      scan.addColumn(columnFamily.getBytes(), avg.key.toColumnString.getBytes)
     }
     else {
       scan.addFamily(columnFamily.getBytes())
     }
-    println("HBaseMedianSource | getMedian | Fetching Median " + table + " | " + columnFamily + " | " + avg.key.toColumnString())
+    println("HBaseMedianSource | getMedian | Fetching Median " + table + " | " + columnFamily + " | " + avg.key.toColumnString)
     //println("BD | " + conf.toString)
     try {
       val aggregationClient: AggregationClient = new AggregationClient(conf)
       val median = aggregationClient.median(TableName.valueOf(table), new DoubleColumnInterpreter(), scan)
-      println("HBaseMedianSource | getMedian | Median Fetched " + table + " | " + columnFamily + " | " + avg.key.toColumnString())
+      println("HBaseMedianSource | getMedian | Median Fetched " + table + " | " + columnFamily + " | " + avg.key.toColumnString)
       if (median == null) return 0.0
       median / 1000.0
     }catch {
       case e: Exception => println("Exception fetching median" + e)
     }finally {
-      println("GetMedian Took " + (System.currentTimeMillis() - startTime) + "ms for " + avg.key.toColumnString())
+      println("GetMedian Took " + (System.currentTimeMillis() - startTime) + "ms for " + avg.key.toColumnString)
     }
     0.0
   }

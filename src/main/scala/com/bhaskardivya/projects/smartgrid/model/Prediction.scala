@@ -1,3 +1,4 @@
+/*
 package com.bhaskardivya.projects.smartgrid.model
 
 import java.util.Date
@@ -42,4 +43,4 @@ case class Prediction(averageWithKey: AverageWithKey, medianLoad: MedianLoadWith
 
     json
   }
-}
+}*/

@@ -2,18 +2,16 @@ package com.bhaskardivya.projects.smartgrid.model
 
 import com.tdunning.math.stats.TDigest
 
-case class MedianLoadWithKey(var key: SensorKeyObject, totalDigest: TDigest){
-  val medianLoad : Double = totalDigest.quantile(0.5)
+case class MedianLoadWithKey(var key: SensorKeyObject, slice: Slice, digest: TDigest){
+  def medianLoad : Double = digest.quantile(0.5)
+
   def add(averageWithKey: AverageWithKey) = {
-    this.totalDigest.add(averageWithKey.averageValue)
+    this.digest.add(averageWithKey.averageValue)
     this
   }
 
   def add(other: MedianLoadWithKey) = {
-    this.totalDigest.add(other.totalDigest)
-    if(this.key.house_id < other.key.house_id){
-      this.key = other.key
-    }
+    this.digest.add(other.digest)
     this
   }
 
@@ -23,5 +21,12 @@ case class MedianLoadWithKey(var key: SensorKeyObject, totalDigest: TDigest){
 object MedianLoadWithKey {
   def reducer = {
     (a: MedianLoadWithKey, b: MedianLoadWithKey) => a+b
+  }
+
+  def fromAverageWithKey(averageWithKey: AverageWithKey) = {
+    val tDigest: TDigest = TDigest.createDigest(Constants.TDIGEST_COMPRESSION)
+    tDigest.add(averageWithKey.averageValue)
+
+    MedianLoadWithKey(averageWithKey.key, averageWithKey.slice, tDigest)
   }
 }

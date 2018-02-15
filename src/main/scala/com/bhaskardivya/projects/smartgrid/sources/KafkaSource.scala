@@ -19,6 +19,7 @@ class KafkaSource() {
     val topic = params.get("topic", "test")
     val server = params.get("bootstrap.servers", "localhost:9092")
     val groupId = params.get("group.id", "test-" + System.currentTimeMillis().toString)
+    val startFromEarliest = params.getBoolean("start-from-earliest", true)
 
     // Create properties map for Kafka
     val properties = new Properties()
@@ -26,9 +27,15 @@ class KafkaSource() {
     properties.setProperty("group.id", groupId)
 
     val consumer = new FlinkKafkaConsumer011[SensorEvent](topic, SensorEvent.schema(env.getConfig), properties)
-    consumer.setStartFromEarliest()
 
-    LOG.info("Created Source from kafka - Topic: {}, Server: {}, Consumer Group: {}", topic, server, groupId);
+    // Always start from the earliest kafka offset
+    if(startFromEarliest)
+      consumer.setStartFromEarliest()
+
+    // Assign the Timestamp and Watermark from the SensorEvent's timestamp field
+    consumer.assignTimestampsAndWatermarks(SensorEvent.tsAssigner())
+
+    LOG.info("Created Source from kafka - Topic: {}, Server: {}, Consumer Group: {}", topic, server, groupId)
 
     env.addSource(consumer)
   }

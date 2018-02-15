@@ -1,8 +1,9 @@
+/*
 package com.bhaskardivya.projects.smartgrid.archived
 
 import com.bhaskardivya.projects.smartgrid.base.AbstractKeyGetter
 import com.bhaskardivya.projects.smartgrid.model._
-import com.bhaskardivya.projects.smartgrid.operators.AverageAggregateWithKey
+import com.bhaskardivya.projects.smartgrid.operators.AverageWithKeyReducer
 import com.bhaskardivya.projects.smartgrid.pipeline._
 import com.bhaskardivya.projects.smartgrid.sinks.HBaseOutputFormatAverageWithKey
 import org.apache.flink.api.java.utils.ParameterTool
@@ -34,7 +35,7 @@ object SensorEventHouseAveragingJob {
     val windowed1min = withTimestamps
       .keyBy(keyGetter(_))
       .window(SlidingEventTimeWindows.of(Time.minutes(1), Time.seconds(Constants.SLIDING_INTERVAL)))
-      .aggregate(new AverageAggregateWithKey(keyGetter))
+      .aggregate(new AverageWithKeyReducer(keyGetter))
       .name("Average for 1 min Window")
 
     val windowed5min = windowed1min
@@ -95,4 +96,4 @@ object SensorEventHouseAveragingJob {
     }
   }
 
-}
+}*/

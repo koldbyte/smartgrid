@@ -1,3 +1,4 @@
+/*
 package com.bhaskardivya.projects.smartgrid.operators
 
 import com.bhaskardivya.projects.smartgrid.model.{AverageWithKey, MedianLoad, MedianLoadWithKey, Prediction}
@@ -19,3 +20,4 @@ class PredictionFunction(entity: String, slidingWindow: Long) extends MapFunctio
     Prediction(value._1, value._2, entity, slidingWindow, predictedValue)
   }
 }
+*/

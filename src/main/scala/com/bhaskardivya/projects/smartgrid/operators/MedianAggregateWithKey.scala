@@ -1,3 +1,4 @@
+/*
 package com.bhaskardivya.projects.smartgrid.operators
 
 import com.bhaskardivya.projects.smartgrid.model.{AverageWithKey, MedianLoadWithKey, SensorKeyObject}
@@ -13,3 +14,4 @@ class MedianAggregateWithKey extends AggregateFunction[AverageWithKey, MedianLoa
 
   override def merge(a: MedianLoadWithKey, b: MedianLoadWithKey) = a+b
 }
+*/

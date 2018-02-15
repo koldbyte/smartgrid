@@ -29,4 +29,8 @@ object Constants {
 
   // Sensor Key Object
   val KEY_NO_VALUE: Long = -1
+  val PROPERTY_LOAD: Int = 1
+
+  // TDigest
+  val TDIGEST_COMPRESSION = 100
 }

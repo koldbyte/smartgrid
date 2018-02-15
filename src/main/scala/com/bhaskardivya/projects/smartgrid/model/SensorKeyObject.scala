@@ -1,12 +1,13 @@
 package com.bhaskardivya.projects.smartgrid.model
 
 import org.apache.sling.commons.json.JSONObject
+import org.apache.flink.streaming.api.scala._
 
 class SensorKeyObject(var house_id: Long, var household_id: Long, var plug_id: Long) extends Serializable{
 
-  override def toString: String = this.toColumnString()
+  override def toString: String = this.toColumnString
 
-  def toColumnString(): String = {
+  def toColumnString: String = {
     val str: StringBuilder = new StringBuilder
 
     if(this.house_id > Constants.KEY_NO_VALUE)
@@ -23,11 +24,9 @@ class SensorKeyObject(var house_id: Long, var household_id: Long, var plug_id: L
     str.toString()
   }
 
-  def toJSONString(): String = {
-    toJSON().toString
-  }
+  def toJSONString: String = toJSON.toString
 
-  def toJSON(): JSONObject = {
+  def toJSON: JSONObject = {
     val json: JSONObject = new JSONObject()
 
     if(this.house_id > Constants.KEY_NO_VALUE)
@@ -62,11 +61,11 @@ class SensorKeyObject(var house_id: Long, var household_id: Long, var plug_id: L
 object SensorKeyObject {
 
   def apply(house_id: Long): SensorKeyObject = {
-    new SensorKeyObject(house_id, Constants.KEY_NO_VALUE, Constants.KEY_NO_VALUE)
+    SensorKeyObject(house_id, Constants.KEY_NO_VALUE, Constants.KEY_NO_VALUE)
   }
 
   def apply(house_id: Long, household_id: Long, plug_id: Long): SensorKeyObject ={
-    new SensorKeyObject(house_id, household_id, plug_id)
+    SensorKeyObject(house_id, household_id, plug_id)
   }
 
   def fromColumnString(columnValue: String): SensorKeyObject = {

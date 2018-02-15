@@ -1,6 +1,6 @@
 package com.bhaskardivya.projects.smartgrid.sinks
 
-import com.bhaskardivya.projects.smartgrid.model.Prediction
+import com.bhaskardivya.projects.smartgrid.model.Prediction2
 import org.apache.flink.api.common.functions.RuntimeContext
 import org.apache.flink.streaming.connectors.elasticsearch.{ElasticsearchSinkFunction, RequestIndexer}
 import org.elasticsearch.action.ActionRequest
@@ -11,9 +11,9 @@ import org.elasticsearch.client.Requests
   * @param esIndex  ElasticSearch Index name
   * @param esType   ElasticSearch Index type
   */
-class PredictionElasticSearchSinkFunction(esIndex: String, esType: String) extends ElasticsearchSinkFunction[Prediction]{
+class PredictionElasticSearchSinkFunction(esIndex: String, esType: String) extends ElasticsearchSinkFunction[Prediction2]{
 
-  def createIndexRequest(element: Prediction): ActionRequest = {
+  def createIndexRequest(element: Prediction2): ActionRequest = {
     val json = element.toJSONString()
 
     Requests.indexRequest
@@ -22,7 +22,7 @@ class PredictionElasticSearchSinkFunction(esIndex: String, esType: String) exten
       .source(json)
   }
 
-  override def process(element: Prediction, ctx: RuntimeContext, indexer: RequestIndexer): Unit = {
+  override def process(element: Prediction2, ctx: RuntimeContext, indexer: RequestIndexer): Unit = {
     indexer.add(createIndexRequest(element))
   }
 
