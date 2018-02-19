@@ -9,6 +9,7 @@ import com.bhaskardivya.projects.smartgrid.sinks.PredictionElasticSearchSink
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.core.fs.FileSystem
+import org.apache.flink.runtime.state.filesystem.FsStateBackend
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala._
 import org.apache.flink.streaming.api.windowing.assigners.{SlidingEventTimeWindows, TumblingEventTimeWindows}
@@ -61,6 +62,7 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     //Create the log dirs
     try {
       new File(LOG_DIR).mkdir()
+      new File(LOG_DIR + "/state/").mkdir()
       new File(LOG_DIR + "/input/").mkdir()
       new File(LOG_DIR + "/output_avg/").mkdir()
       new File(LOG_DIR + "/output_prediction/").mkdir()
@@ -77,6 +79,9 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     // will be using the timestamp from the records
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
+    //env.enableCheckpointing(10000) // checkpoint every 10000 msecs
+    //env.setStateBackend(new FsStateBackend(LOG_DIR +"/state/"))
+
     // Get the stream according to params
     val rawStream: DataStream[SensorEvent] = SourceChooser.from(env, params).name("Sensor Source with Timestamp")
 
@@ -90,24 +95,24 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     // Streams for each window duration for the average
     val avg_windowed1min = initializedFlow
       .map(e => AverageWithKey(keyGetter(e), Slice(Time.minutes(1))(e.timestamp), Average(e.value, 1)))
-      .keyBy(e => (e.key, e.slice.start_time_of_day))
+      .keyBy(_.key)
       .window(TumblingEventTimeWindows.of(Time.minutes(1)))
       .reduce(new AverageWithKeyReducer)
       .name(getKeyName() + " Average for 1 min Tumbling Window")
 
     // Store median as operator state
     avg_windowed1min
-      .keyBy(e => (e.key, e.slice.start_time_of_day))
+      .keyBy(_.key)
       .flatMap(new MedianWithKeyMapper)
       .name(getKeyName() + " Median state for 1 min Tumbling Window")
 
     implicit val typeInfoPrediction2 = TypeInformation.of(classOf[Prediction2])
 
     val windowed1min_prediction = avg_windowed1min
-      .keyBy(e => (e.key, e.slice.start_time_of_day))
+      .keyBy(_.key)
       .window(SlidingEventTimeWindows.of(Time.minutes(1), Time.seconds(30)))
       .reduce(new AverageWithKeyReducer)
-      .keyBy(e => (e.key, e.slice.start_time_of_day))
+      .keyBy(_.key)
       .flatMap(new EnrichMapper)
       .name(getKeyName() + " Prediction values for 1 min")
 

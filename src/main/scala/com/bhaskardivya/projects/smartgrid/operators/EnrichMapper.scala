@@ -3,7 +3,7 @@ package com.bhaskardivya.projects.smartgrid.operators
 import com.bhaskardivya.projects.smartgrid.model.{AverageWithKey, MedianLoad, MedianLoadWithKey, Prediction2}
 import com.tdunning.math.stats.TDigest
 import org.apache.flink.api.common.functions.{RichFlatMapFunction, RichReduceFunction}
-import org.apache.flink.api.common.state.{ValueState, ValueStateDescriptor}
+import org.apache.flink.api.common.state.{MapState, MapStateDescriptor, ValueState, ValueStateDescriptor}
 import org.apache.flink.api.java.functions.FunctionAnnotation.ForwardedFields
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.scala.createTypeInformation
@@ -14,17 +14,19 @@ import org.apache.flink.util.Collector
   */
 class EnrichMapper extends RichFlatMapFunction[AverageWithKey, Prediction2]{
 
-  private var digest: ValueState[TDigest] = _
+  private var digest: MapState[Long, TDigest] = _
   private var prediction2: Prediction2 = _
 
   override def open(parameters: Configuration): Unit = {
-    val descriptor = new ValueStateDescriptor[TDigest]("median", createTypeInformation[TDigest])
-    digest = getRuntimeContext.getState(descriptor)
+    val descriptor = new MapStateDescriptor[Long, TDigest]("median", createTypeInformation[Long], createTypeInformation[TDigest])
+    digest = getRuntimeContext.getMapState(descriptor)
   }
 
   override def flatMap(value: AverageWithKey, out: Collector[Prediction2]): Unit = {
-    val currentDigest = digest.value()
+    // Get the TDigest Object for the SensorKey and slice predicting for
+    val currentDigest = digest.get(value.slice.predicting_for_time_of_day)
 
+    // Get the Median Load Value
     val medianLoad =
       if(currentDigest == null) {
         value.averageValue
@@ -32,8 +34,13 @@ class EnrichMapper extends RichFlatMapFunction[AverageWithKey, Prediction2]{
         currentDigest.quantile(0.5)
       }
 
+    // Calculate the load prediction
     val prediction = (value.averageValue + medianLoad) / 2.0
 
+    // Update the Slice index for prediction
+    value.slice = value.slice.predicting_for_slice
+
+    // Create the final Prediction Object to be collected
     if (prediction2 == null) {
       prediction2 = Prediction2(value, MedianLoad(medianLoad), prediction)
     } else {

@@ -1,7 +1,5 @@
 package com.bhaskardivya.projects.smartgrid.model
 
-import java.util.Date
-
 import org.apache.sling.commons.json.JSONObject
 
 case class Prediction2(var averageWithKey: AverageWithKey, var medianLoad: MedianLoad, var predictedLoad: Double) {
@@ -16,15 +14,15 @@ case class Prediction2(var averageWithKey: AverageWithKey, var medianLoad: Media
 
     //averageWithKey object
     val averageWithKeyJSON = averageWithKey.key.toJSON
-    averageWithKeyJSON.put("sum", averageWithKey.average.sum)
+    averageWithKeyJSON.put("sum", normalise_double(averageWithKey.average.sum))
     averageWithKeyJSON.put("count", averageWithKey.average.count)
-    averageWithKeyJSON.put("avg", averageWithKey.averageValue)
+    averageWithKeyJSON.put("avg", normalise_double(averageWithKey.averageValue))
     averageWithKeyJSON.put("eventTimestamp", averageWithKey.slice.timestamp)
     json.put("averageWithKey", averageWithKeyJSON)
 
     //medianLoad
     val medianLoadJSON = new JSONObject()
-    medianLoadJSON.put("load", medianLoad.load.formatted("%.3f").toFloat)
+    medianLoadJSON.put("load", normalise_double(medianLoad.load))
     json.put("medianLoad", medianLoadJSON)
 
     //key or entity
@@ -38,11 +36,19 @@ case class Prediction2(var averageWithKey: AverageWithKey, var medianLoad: Media
     json.put("slice-stop", averageWithKey.slice.ts_stop)
 
     //Predicted value
-    json.put("predictedValue", predictedLoad)
+    json.put("predictedValue", normalise_double(predictedLoad))
 
     // Current Time
     json.put("current-timestamp", System.currentTimeMillis)
 
     json
+  }
+
+  def normalise_double(dbl: Double): Double = {
+    if(dbl < 1e-6) {
+      0.000001
+    }else{
+      dbl
+    }
   }
 }

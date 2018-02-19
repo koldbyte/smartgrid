@@ -5,7 +5,7 @@ import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.hadoop.io.DoubleWritable
 import org.apache.flink.streaming.api.scala._
 
-case class AverageWithKey(var key: SensorKeyObject, slice: Slice, average: Average){
+case class AverageWithKey(var key: SensorKeyObject, var slice: Slice, average: Average){
   def averageValue = average.avg
 
   def add(that: AverageWithKey): AverageWithKey = {

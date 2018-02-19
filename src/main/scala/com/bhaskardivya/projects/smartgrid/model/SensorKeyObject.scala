@@ -61,11 +61,11 @@ class SensorKeyObject(var house_id: Long, var household_id: Long, var plug_id: L
 object SensorKeyObject {
 
   def apply(house_id: Long): SensorKeyObject = {
-    SensorKeyObject(house_id, Constants.KEY_NO_VALUE, Constants.KEY_NO_VALUE)
+    new SensorKeyObject(house_id, Constants.KEY_NO_VALUE, Constants.KEY_NO_VALUE)
   }
 
   def apply(house_id: Long, household_id: Long, plug_id: Long): SensorKeyObject ={
-    SensorKeyObject(house_id, household_id, plug_id)
+    new SensorKeyObject(house_id, household_id, plug_id)
   }
 
   def fromColumnString(columnValue: String): SensorKeyObject = {
