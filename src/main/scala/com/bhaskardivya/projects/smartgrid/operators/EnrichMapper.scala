@@ -1,6 +1,6 @@
 package com.bhaskardivya.projects.smartgrid.operators
 
-import com.bhaskardivya.projects.smartgrid.model.{AverageWithKey, MedianLoad, MedianLoadWithKey, Prediction2}
+import com.bhaskardivya.projects.smartgrid.model.{AverageWithKey, MedianLoad, MedianLoadWithKey, Prediction}
 import com.tdunning.math.stats.TDigest
 import org.apache.flink.api.common.functions.{RichFlatMapFunction, RichReduceFunction}
 import org.apache.flink.api.common.state.{MapState, MapStateDescriptor, ValueState, ValueStateDescriptor}
@@ -12,17 +12,17 @@ import org.apache.flink.util.Collector
 /**
   * Rich Mapper function to get the predicted load values from the median state and Average Loads
   */
-class EnrichMapper extends RichFlatMapFunction[AverageWithKey, Prediction2]{
+class EnrichMapper(stateName: String) extends RichFlatMapFunction[AverageWithKey, Prediction]{
 
   private var digest: MapState[Long, TDigest] = _
-  private var prediction2: Prediction2 = _
+  private var prediction2: Prediction = _
 
   override def open(parameters: Configuration): Unit = {
-    val descriptor = new MapStateDescriptor[Long, TDigest]("median", createTypeInformation[Long], createTypeInformation[TDigest])
+    val descriptor = new MapStateDescriptor[Long, TDigest](stateName, createTypeInformation[Long], createTypeInformation[TDigest])
     digest = getRuntimeContext.getMapState(descriptor)
   }
 
-  override def flatMap(value: AverageWithKey, out: Collector[Prediction2]): Unit = {
+  override def flatMap(value: AverageWithKey, out: Collector[Prediction]): Unit = {
     // Get the TDigest Object for the SensorKey and slice predicting for
     val currentDigest = digest.get(value.slice.predicting_for_time_of_day)
 
@@ -42,7 +42,7 @@ class EnrichMapper extends RichFlatMapFunction[AverageWithKey, Prediction2]{
 
     // Create the final Prediction Object to be collected
     if (prediction2 == null) {
-      prediction2 = Prediction2(value, MedianLoad(medianLoad), prediction)
+      prediction2 = Prediction(value, MedianLoad(medianLoad), prediction)
     } else {
       prediction2.averageWithKey = value
       prediction2.medianLoad = MedianLoad(medianLoad)

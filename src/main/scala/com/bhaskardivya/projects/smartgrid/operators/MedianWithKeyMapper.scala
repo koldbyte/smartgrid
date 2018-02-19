@@ -11,13 +11,13 @@ import org.apache.flink.util.Collector
 /**
   * A Rich flatMap function to keep a running TDigest object for each key and each starting minutes of a day.
   */
-class MedianWithKeyMapper extends RichFlatMapFunction[AverageWithKey, AverageWithKey]{
+class MedianWithKeyMapper(stateName: String) extends RichFlatMapFunction[AverageWithKey, AverageWithKey]{
 
   private var digest: MapState[Long, TDigest] = _
 
   override def open(parameters: Configuration): Unit = {
-    val descriptor = new MapStateDescriptor[Long, TDigest]("median", createTypeInformation[Long], createTypeInformation[TDigest])
-    descriptor.setQueryable("median-query")
+    val descriptor = new MapStateDescriptor[Long, TDigest](stateName, createTypeInformation[Long], createTypeInformation[TDigest])
+    descriptor.setQueryable(stateName+"-query")
     digest = getRuntimeContext.getMapState(descriptor)
   }
 

@@ -1,5 +1,6 @@
 package com.bhaskardivya.projects.smartgrid.model
 
+import com.bhaskardivya.projects.smartgrid.util.JSONTrait
 import org.apache.commons.lang3.builder.ToStringBuilder
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.serialization.TypeInformationSerializationSchema
@@ -13,7 +14,7 @@ import org.apache.sling.commons.json.JSONObject
 /**
   * id, timestamp, value, property, plug_id, household_id, house_id
   */
-case class SensorEvent(var id: Long,var  timestamp: Long, var value: Double, var property: Int, var plug_id: Long, var household_id: Long, var house_id: Long){
+case class SensorEvent(var id: Long,var  timestamp: Long, var value: Double, var property: Int, var plug_id: Long, var household_id: Long, var house_id: Long) extends JSONTrait {
 
   def adjustEventTimestamp(millis: Long) = {
     this.timestamp = this.timestamp + (millis / 1000)
