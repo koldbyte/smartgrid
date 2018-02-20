@@ -14,16 +14,14 @@ import scala.collection.immutable
 case class Slice(size: Time)(var timestamp: Long) {
   private val seconds_in_Day = (24*60*60)
 
-  def size_in_seconds: Long = size.toMilliseconds / 1000
 
-  // This is the base timestamp ... the epoch of the world with flink
-  val base = 0L // TODO: currently set 0 to align with Unix Epoch
+  def size_in_seconds: Long = size.toMilliseconds / 1000
 
   def ts_start: Long = timestamp - (timestamp % size_in_seconds)
 
   def ts_stop: Long = ts_start + size_in_seconds - 1
 
-  def i: Long = ( ts_start - base ) / size_in_seconds
+  def i: Long = ( ts_start - Constants.BASE_TIMESTAMP ) / size_in_seconds
 
   def num_slices_in(hr: Long): Long = (hr * 60 * 60) / size_in_seconds
 
@@ -50,5 +48,18 @@ case class Slice(size: Time)(var timestamp: Long) {
     str.append(ts_stop.toString)
 
     str.toString()
+  }
+}
+
+object Slice {
+  def from(size: Time)(sliceIndex: Long): Slice = {
+    val size_in_seconds = size.toMilliseconds / 1000
+
+    val ts_start = sliceIndex * size_in_seconds + Constants.BASE_TIMESTAMP
+
+    //lets keep the event occurring just right in the middle of the slice index
+    val event_timestamp = ts_start + (size_in_seconds / 2)
+
+    Slice(size)(event_timestamp)
   }
 }
