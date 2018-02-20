@@ -4,9 +4,6 @@
 #
 # Continuous Integration!
 version: 2
-general:
-  artifacts:
-    - $CIRCLE_ARTIFACTS/jar
 jobs:
   build:
     docker:
@@ -43,5 +40,16 @@ jobs:
 
       # run tests!
       #- run: mvn integration-test
-      - run: mkdir $CIRCLE_ARTIFACTS/jar && mv target/smartgrid-*.jar $CIRCLE_ARTIFACTS/jar/
+
+      - run: |
+          set -xu
+          mkdir -p /tmp/artifacts
+          cp target/smartgrid*.jar /tmp/artifacts
+
+      # Save artifacts
+      - store_artifacts:
+          path: /tmp/artifacts
+          destination: build
+
+
 
