@@ -12,7 +12,7 @@ import scala.collection.immutable
   * @param timestamp  Event timestamp from the record in seconds
   */
 case class Slice(size: Time)(var timestamp: Long) {
-  private val seconds_in_Day = (24*60*60)
+  private val seconds_in_Day = 24 * 60 * 60
 
 
   def size_in_seconds: Long = size.toMilliseconds / 1000

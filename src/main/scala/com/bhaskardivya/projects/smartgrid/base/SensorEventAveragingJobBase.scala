@@ -144,7 +144,7 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     * Helper function to create median MapState for each window duration
     * @param averageWithKeyStream   DataStream of AverageWithKey
     */
-  def createMedianState(averageWithKeyStream: DataStream[AverageWithKey]) = {
+  def createMedianState(averageWithKeyStream: DataStream[AverageWithKey]): Unit = {
 
     // Streams for each window duration for the average
     windowDurations.foreach(duration => {
@@ -166,7 +166,7 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     })
   }
 
-  def createAverageStream(params: ParameterTool, duration: Int, sourceStream: DataStream[AverageWithKey]) = {
+  def createAverageStream(params: ParameterTool, duration: Int, sourceStream: DataStream[AverageWithKey]): DataStream[AverageWithKey] = {
 
     val windowed_average = sourceStream
       .keyBy(_.key)
@@ -179,7 +179,7 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     windowed_average
   }
 
-  def createPredictionStream(params: ParameterTool, duration: Int, averageStream: DataStream[AverageWithKey]) = {
+  def createPredictionStream(params: ParameterTool, duration: Int, averageStream: DataStream[AverageWithKey]): DataStream[Prediction] = {
     val windowed_prediction: DataStream[Prediction] = averageStream
       .keyBy(_.key)
       .flatMap(new EnrichMapper(getStateName(duration)))
@@ -200,5 +200,5 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     }
   }
 
-  def getStateName(duration: Int) = "median-" + duration + "min"
+  def getStateName(duration: Int): String = "median-" + duration + "min"
 }

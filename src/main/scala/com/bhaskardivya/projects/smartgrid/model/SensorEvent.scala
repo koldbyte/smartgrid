@@ -16,7 +16,7 @@ import org.apache.sling.commons.json.JSONObject
   */
 case class SensorEvent(var id: Long,var  timestamp: Long, var value: Double, var property: Int, var plug_id: Long, var household_id: Long, var house_id: Long) extends JSONTrait {
 
-  def adjustEventTimestamp(millis: Long) = {
+  def adjustEventTimestamp(millis: Long): Unit = {
     this.timestamp = this.timestamp + (millis / 1000)
   }
 
@@ -57,7 +57,7 @@ object SensorEvent {
 
       new SensorEvent(id, timestamp, value, property, plug_id, household_id, house_id)
     } catch {
-      case e: Exception => null
+      case _ => null
     }
   }
 
@@ -70,7 +70,7 @@ object SensorEvent {
 
   def tsAssigner(): BoundedOutOfOrdernessTimestampExtractor[SensorEvent] = {
     new BoundedOutOfOrdernessTimestampExtractor[SensorEvent](MAX_DELAY) {
-      override def extractTimestamp(element: SensorEvent) = element.getTimeMillis()
+      override def extractTimestamp(element: SensorEvent): Long = element.getTimeMillis()
     }
   }
 }

@@ -1,18 +1,32 @@
 package com.bhaskardivya.projects.smartgrid.sources
 
-import org.apache.flink.api.java.io.TextInputFormat
+import com.bhaskardivya.projects.smartgrid.model.SensorEvent
 import org.apache.flink.api.java.utils.ParameterTool
-import org.apache.flink.core.fs.Path
-import org.apache.flink.streaming.api.functions.source.FileProcessingMode
 import org.apache.flink.streaming.api.scala._
 
 
 class FileSource {
-  def getSource(env: StreamExecutionEnvironment, params: ParameterTool): DataStream[String] = {
-    val filePath: String = params.get("filePath", "/run/media/osboxes/Data/data/sorted100M.1s.hsum.csv")
-    val fileInterval: Long = params.getLong("fileInterval", 100)
+  def getSimulatedCSVSource(env: StreamExecutionEnvironment, params: ParameterTool): DataStream[SensorEvent] = {
+    val data = params.get("input", "/data/data.gz")
+    val maxServingDelay = params.getInt("maxServingDelay", 0)
+    val servingSpeedFactor = params.getFloat("servingSpeedFactor", 1f)
+    val offsetEventTimestamp = params.has("offsetEventTimestamp")
 
-    env.readFile(new TextInputFormat(new Path(filePath)), filePath, FileProcessingMode.PROCESS_ONCE, fileInterval)
+    val events = env.addSource(new CSVFileSource(data, maxServingDelay, servingSpeedFactor, offsetEventTimestamp))
+      .name("CSV GZ File")
+
+    events
+  }
+
+  def getSource(env: StreamExecutionEnvironment, params: ParameterTool): DataStream[SensorEvent] = {
+    val filePath: String = params.get("input", "/data/data.gz")
+
+    // read the CSV GZ and assign Timestamp
+    val csv: DataStream[SensorEvent] = env.readTextFile(filePath)
+      .map[SensorEvent](line => SensorEvent.fromString(line))
+      .assignTimestampsAndWatermarks(SensorEvent.tsAssigner())
+
+    csv
   }
 
 }

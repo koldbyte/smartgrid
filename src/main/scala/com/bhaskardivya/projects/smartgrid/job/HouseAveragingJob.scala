@@ -12,7 +12,7 @@ object HouseAveragingJob extends SensorEventAveragingJobBase with Serializable{
 
   override def getTargetColumnFamily(): String = Constants.HOUSE_CF
 
-  override def initializeFlow(dataStream: DataStream[SensorEvent]) = {
+  override def initializeFlow(dataStream: DataStream[SensorEvent]): DataStream[SensorEvent] = {
     // Sum the values of all the plugs in a house with the same time stamp
     dataStream
       .keyBy("house_id", "timestamp")
