@@ -114,19 +114,24 @@ abstract class SensorEventAveragingJobBase extends Serializable {
 
     // Create the average sliding window stream and corresponding Prediction Stream
     val windowed_average_1min = createAverageStream(params, 1, averageWithKeys)
-    createPredictionStream(params, 1, windowed_average_1min)
+    val prediction_1min = createPredictionStream(params, 1, windowed_average_1min)
+    createPredictionSink(params, prediction_1min, Constants.ES_INDEX_TYPE_1MIN)
 
     val windowed_average_5min = createAverageStream(params, 5, windowed_average_1min)
-    createPredictionStream(params, 5, windowed_average_5min)
+    val prediction_5min = createPredictionStream(params, 5, windowed_average_5min)
+    createPredictionSink(params, prediction_5min, Constants.ES_INDEX_TYPE_5MIN)
 
     val windowed_average_15min = createAverageStream(params, 15, windowed_average_5min)
-    createPredictionStream(params, 15, windowed_average_15min)
+    val prediction_15min = createPredictionStream(params, 15, windowed_average_15min)
+    createPredictionSink(params, prediction_15min, Constants.ES_INDEX_TYPE_15MIN)
 
     val windowed_average_60min = createAverageStream(params, 60, windowed_average_15min)
-    createPredictionStream(params, 60, windowed_average_60min)
+    val prediction_60min = createPredictionStream(params, 60, windowed_average_60min)
+    createPredictionSink(params, prediction_60min, Constants.ES_INDEX_TYPE_60MIN)
 
     val windowed_average_120min = createAverageStream(params, 120, windowed_average_60min)
-    createPredictionStream(params, 120, windowed_average_120min)
+    val prediction_120min = createPredictionStream(params, 120, windowed_average_120min)
+    createPredictionSink(params, prediction_120min, Constants.ES_INDEX_TYPE_120MIN)
 
     initializedFlow
         .addSink(ElasticSearchSink[SensorEvent](params, Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_RAW))
@@ -164,6 +169,7 @@ abstract class SensorEventAveragingJobBase extends Serializable {
   def createAverageStream(params: ParameterTool, duration: Int, sourceStream: DataStream[AverageWithKey]) = {
 
     val windowed_average = sourceStream
+      .keyBy(_.key)
       // Map the Correct Slice duration
       .map(e => AverageWithKey(e.key, Slice(Time.minutes(duration))(e.slice.timestamp), e.average))
       .keyBy(_.key)
@@ -174,22 +180,24 @@ abstract class SensorEventAveragingJobBase extends Serializable {
   }
 
   def createPredictionStream(params: ParameterTool, duration: Int, averageStream: DataStream[AverageWithKey]) = {
-    val windowed_prediction = averageStream
+    val windowed_prediction: DataStream[Prediction] = averageStream
       .keyBy(_.key)
       .flatMap(new EnrichMapper(getStateName(duration)))
       .name(getKeyName() + " Prediction values for " + duration + " min")
 
+    windowed_prediction
+  }
+
+  def createPredictionSink(params: ParameterTool, windowed_prediction: DataStream[Prediction], indexType: String) = {
     // Sink the Predicted value streams to Elasticsearch
     windowed_prediction
-      .addSink(ElasticSearchSink[Prediction](params, Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_1MIN))
-      .name(getKeyName() + " Prediction Sink - ES - " + duration + "  min Window")
+      .addSink(ElasticSearchSink[Prediction](params, Constants.ES_INDEX_NAME, indexType))
+      .name(getKeyName() + " Prediction Sink - ES - " + indexType + "  min Window")
 
     // Write to file for debug
     if(params.has("debug")){
-      windowed_prediction.writeAsText(LOG_DIR + "/output_prediction/windowed"+ duration +"min.csv", FileSystem.WriteMode.OVERWRITE)
+      windowed_prediction.writeAsText(LOG_DIR + "/output_prediction/windowed"+ indexType +".csv", FileSystem.WriteMode.OVERWRITE)
     }
-
-    windowed_prediction
   }
 
   def getStateName(duration: Int) = "median-" + duration + "min"

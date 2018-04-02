@@ -46,7 +46,7 @@ class WorkValueFlatMap(size: Time)(keyGetter: AbstractKeyGetter) extends FlatMap
 
   def getAverageLoad(value: TwoWorkEvents) = {
     //in kWH
-    val work_diff = Math.abs(value.sensorEvent1.value - value.sensorEvent2.value)
+    val work_diff = Math.abs(value.sensorEvent1.value - value.sensorEvent2.value) * 1000
 
     //in seconds
     val time_diff = Math.abs(value.sensorEvent1.timestamp - value.sensorEvent2.timestamp)
