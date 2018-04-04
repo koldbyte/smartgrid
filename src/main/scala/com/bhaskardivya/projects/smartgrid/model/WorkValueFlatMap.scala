@@ -5,7 +5,7 @@ import org.apache.flink.api.common.functions.FlatMapFunction
 import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.util.Collector
 
-class WorkValueFlatMap(size: Time)(keyGetter: AbstractKeyGetter) extends FlatMapFunction[TwoWorkEvents, AverageWithKey]{
+class WorkValueFlatMap(size_in_seconds: Long)(keyGetter: AbstractKeyGetter) extends FlatMapFunction[TwoWorkEvents, AverageWithKey]{
   override def flatMap(value: TwoWorkEvents, out: Collector[AverageWithKey]): Unit = {
 
     if(!value.isValid)
@@ -26,7 +26,7 @@ class WorkValueFlatMap(size: Time)(keyGetter: AbstractKeyGetter) extends FlatMap
 
     slice_range.foreach (
       slice_index => {
-        val averageWithKey = AverageWithKey(sensorKeyObject, Slice.from(size)(slice_index), average)
+        val averageWithKey = AverageWithKey(sensorKeyObject, Slice.from(size_in_seconds)(slice_index), average)
         out.collect(averageWithKey)
       }
     )
@@ -34,8 +34,8 @@ class WorkValueFlatMap(size: Time)(keyGetter: AbstractKeyGetter) extends FlatMap
   }
 
   def getSliceRange(value: TwoWorkEvents) =  {
-    val slice_range_a = Slice(size)(value.sensorEvent1.timestamp).i
-    val slice_range_b = Slice(size)(value.sensorEvent2.timestamp).i
+    val slice_range_a = Slice(Time.seconds(size_in_seconds))(value.sensorEvent1.timestamp).i
+    val slice_range_b = Slice(Time.seconds(size_in_seconds))(value.sensorEvent2.timestamp).i
 
     if(slice_range_a > slice_range_b){
       slice_range_b to slice_range_a

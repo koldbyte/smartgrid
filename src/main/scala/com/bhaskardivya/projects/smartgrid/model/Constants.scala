@@ -36,6 +36,6 @@ object Constants {
   val TDIGEST_COMPRESSION = 100
 
   // This is the base timestamp ... the epoch of the world with flink
-  val BASE_TIMESTAMP = 0L // TODO: currently set 0 to align with Unix Epoch
+  val BASE_TIMESTAMP = 1377900000L // TODO: currently set 0 to align with Unix Epoch
 
 }

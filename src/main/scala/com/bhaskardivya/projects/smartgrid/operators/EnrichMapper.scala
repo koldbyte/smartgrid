@@ -29,7 +29,11 @@ class EnrichMapper(stateName: String) extends RichFlatMapFunction[AverageWithKey
     // Get the Median Load Value
     val medianLoad =
       if(currentDigest == null) {
-        value.averageValue
+        val previousDigest =  digest.get(value.slice.predicting_previous_slice)
+        if(previousDigest == null)
+          value.averageValue
+        else
+          previousDigest.quantile(0.5)
       }else{
         currentDigest.quantile(0.5)
       }
@@ -38,7 +42,7 @@ class EnrichMapper(stateName: String) extends RichFlatMapFunction[AverageWithKey
     val prediction = (value.averageValue + medianLoad) / 2.0
 
     // Update the Slice index for prediction
-    value.slice = value.slice.predicting_for_slice
+    //TODO: Testing //value.slice = value.slice.predicting_for_slice
 
     // Create the final Prediction Object to be collected
     if (prediction2 == null) {
@@ -49,6 +53,7 @@ class EnrichMapper(stateName: String) extends RichFlatMapFunction[AverageWithKey
       prediction2.predictedLoad = prediction
     }
 
-    out.collect(prediction2)
+    if(prediction > 1e-6) //
+      out.collect(prediction2)
   }
 }

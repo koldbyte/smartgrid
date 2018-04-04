@@ -9,7 +9,6 @@ import com.bhaskardivya.projects.smartgrid.sinks.ElasticSearchSink
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.utils.ParameterTool
 import org.apache.flink.core.fs.FileSystem
-import org.apache.flink.runtime.state.filesystem.FsStateBackend
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala.{DataStream, _}
 import org.apache.flink.streaming.api.windowing.assigners.{SlidingEventTimeWindows, TumblingEventTimeWindows}
@@ -20,7 +19,7 @@ import org.apache.flink.streaming.api.windowing.time.Time
   * averages and medians which are being used here itself to predict
   * the load forecast
   */
-abstract class SensorEventAveragingJobBase extends Serializable {
+abstract class PredictionJobSingleWindowBase extends Serializable {
 
   //register implicits for types
   implicit val typeInfoAverageWithKey: TypeInformation[AverageWithKey] = TypeInformation.of(classOf[AverageWithKey])
@@ -37,13 +36,6 @@ abstract class SensorEventAveragingJobBase extends Serializable {
   def getKeyName(): String
 
   /**
-    * Method to prepare the raw events properly aggregated(sum) based on the key
-    * @param dataStream source raw data stream
-    * @return
-    */
-  def initializeFlow(dataStream: DataStream[SensorEvent]): DataStream[SensorEvent]
-
-  /**
     * Method that returns the value of the key in the source datum
     *
     * @param element  SensorEvent record
@@ -51,20 +43,21 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     */
   def getKey(element: SensorEvent): SensorKeyObject
 
-  /**
-    * Value of the HBase column family where the averages will be stored
-    * @return String Name of the column family
-    */
-  def getTargetColumnFamily(): String
-
   object keyGetter extends AbstractKeyGetter {
     def apply(element: SensorEvent): SensorKeyObject = {
       getKey(element)
     }
   }
 
+  /**
+    * Method to prepare the raw events properly aggregated(sum) based on the key
+    * @param dataStream source raw data stream
+    * @return
+    */
+  def initializeFlow(dataStream: DataStream[SensorEvent]): DataStream[SensorEvent]
+
   // Sliding window durations in minutes
-  val windowDurations = List(1, 5, 15, 60, 120)
+  val windowDurations = List(5)
 
   def main(args: Array[String]): Unit = {
 
@@ -94,6 +87,14 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     // Get the stream according to params
     val rawStream: DataStream[SensorEvent] = SourceChooser.from(env, params).name("Sensor Source with Timestamp")
 
+    // Create a stream with sum according to the key specified
+    val initializedFlow = if (params.has("deduplicate")) initializeFlow(rawStream) else rawStream
+
+    if(params.getBoolean("sink.raw", false))
+      initializedFlow
+        .addSink(ElasticSearchSink[SensorEvent](params, Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_RAW))
+        .name("Sensor Raw to ES")
+
     // Create a Global Window for work values which will output the missing load values
     val averageUsingWorkValues: DataStream[AverageWithKey] = rawStream
       .filter(_.property == Constants.PROPERTY_WORK)
@@ -101,9 +102,6 @@ abstract class SensorEventAveragingJobBase extends Serializable {
       .countWindow(2, 1)
       .process(new WorkValueProcessWindow)
       .flatMap(new WorkValueFlatMap(60)(keyGetter)) //60 seconds
-
-    // Create a stream with sum according to the key specified
-    val initializedFlow = if (params.has("deduplicate")) initializeFlow(rawStream) else rawStream
 
     val averageWithKeys = initializedFlow
       .map(e => AverageWithKey(keyGetter(e), Slice(Time.minutes(1))(e.timestamp), Average(e.value, 1)))
@@ -115,40 +113,11 @@ abstract class SensorEventAveragingJobBase extends Serializable {
     createMedianState(averageWithKeys)
 
     // Create the average sliding window stream and corresponding Prediction Stream
-    val windowed_average_1min = createAverageStream(params, 1, averageWithKeys)
-    if (params.getBoolean("sink.1min", false)) {
-      val prediction_1min = createPredictionStream(params, 1, windowed_average_1min)
-      createPredictionSink(params, prediction_1min, Constants.ES_INDEX_TYPE_1MIN)
-    }
-
-    val windowed_average_5min = createAverageStream(params, 5, windowed_average_1min)
+    val windowed_average_5min = createAverageStream(params, 5, averageWithKeys)
     if(params.getBoolean("sink.5min", false)) {
       val prediction_5min = createPredictionStream(params, 5, windowed_average_5min)
       createPredictionSink(params, prediction_5min, Constants.ES_INDEX_TYPE_5MIN)
     }
-
-    val windowed_average_15min = createAverageStream(params, 15, windowed_average_5min)
-    if(params.getBoolean("sink.15min", false))  {
-      val prediction_15min = createPredictionStream(params, 15, windowed_average_15min)
-      createPredictionSink(params, prediction_15min, Constants.ES_INDEX_TYPE_15MIN)
-    }
-
-    val windowed_average_60min = createAverageStream(params, 60, windowed_average_15min)
-    if(params.getBoolean("sink.60min", false)) {
-      val prediction_60min = createPredictionStream(params, 60, windowed_average_60min)
-      createPredictionSink(params, prediction_60min, Constants.ES_INDEX_TYPE_60MIN)
-    }
-
-    val windowed_average_120min = createAverageStream(params, 120, windowed_average_60min)
-    if(params.getBoolean("sink.120min", false)) {
-      val prediction_120min = createPredictionStream(params, 120, windowed_average_120min)
-      createPredictionSink(params, prediction_120min, Constants.ES_INDEX_TYPE_120MIN)
-    }
-
-    if(params.getBoolean("sink.raw", false))
-      initializedFlow
-          .addSink(ElasticSearchSink[SensorEvent](params, Constants.ES_INDEX_NAME, Constants.ES_INDEX_TYPE_RAW))
-          .name("Sensor Raw to ES")
 
     env.execute("Sensor Event" + getKeyName() + " Prediction Job")
   }

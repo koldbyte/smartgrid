@@ -36,6 +36,7 @@ case class Slice(size: Time)(var timestamp: Long) {
   def stop_time_of_day: Long = ts_stop % seconds_in_Day
 
   def predicting_for_time_of_day: Long = (start_time_of_day + 2*size_in_seconds) % seconds_in_Day
+  def predicting_previous_slice: Long = (start_time_of_day - 2*size_in_seconds + seconds_in_Day) % seconds_in_Day
   def predicting_for_slice: Slice = Slice(size)(ts_start + 2*size_in_seconds)
 
   override def toString : String = {
@@ -62,4 +63,9 @@ object Slice {
 
     Slice(size)(event_timestamp)
   }
+
+  def from(size_in_seconds: Long)(sliceIndex: Long) : Slice = {
+    from(Time.seconds(size_in_seconds))(sliceIndex)
+  }
+
 }

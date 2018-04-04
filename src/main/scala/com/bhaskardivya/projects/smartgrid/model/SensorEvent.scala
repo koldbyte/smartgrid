@@ -31,13 +31,21 @@ case class SensorEvent(var id: Long,var  timestamp: Long, var value: Double, var
     val json: JSONObject = new JSONObject()
     json.put("id", this.id)
     json.put("timestamp", this.timestamp)
-    json.put("value", this.value)
+    json.put("value", normalise_double(this.value))
     json.put("property", this.property)
     json.put("plug_id", this.plug_id)
     json.put("household_id", this.household_id)
     json.put("house_id", this.house_id)
 
     json
+  }
+
+  def normalise_double(dbl: Double): Double = {
+    if(dbl < 1e-6) {
+      0.000001
+    }else{
+      dbl
+    }
   }
 }
 
@@ -57,7 +65,7 @@ object SensorEvent {
 
       new SensorEvent(id, timestamp, value, property, plug_id, household_id, house_id)
     } catch {
-      case _ => null
+      case _ : Throwable => null
     }
   }
 

@@ -10,6 +10,7 @@ class WorkValueProcessWindow extends ProcessWindowFunction[SensorEvent, TwoWorkE
 
     elements match {
       case x: Iterable[SensorEvent] if x.size == 2 => out.collect(TwoWorkEvents(x.toList(0), x.toList(1)))
+      case _ => println("Encountered non-pair CountWindow Work")
     }
   }
 }

@@ -29,10 +29,11 @@ class MedianWithKeyMapper(stateName: String) extends RichFlatMapFunction[Average
       currentDigest = TDigest.createDigest(Constants.TDIGEST_COMPRESSION)
     }
 
-    currentDigest.add(key)
+    if(!value.average.avg.isNaN) {
+      currentDigest.add(value.average.avg)
+      digest.put(key, currentDigest)
+    }
 
-    digest.put(key, currentDigest)
-
-    out.collect(value)
+    //out.collect(value) //Dont emit as no further processing is required on this stream
   }
 }
