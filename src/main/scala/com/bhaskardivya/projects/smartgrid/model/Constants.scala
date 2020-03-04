@@ -29,4 +29,13 @@ object Constants {
 
   // Sensor Key Object
   val KEY_NO_VALUE: Long = -1
+  val PROPERTY_LOAD: Int = 1
+  val PROPERTY_WORK: Int = 0
+
+  // TDigest
+  val TDIGEST_COMPRESSION = 100
+
+  // This is the base timestamp ... the epoch of the world with flink
+  val BASE_TIMESTAMP = 1377900000L // TODO: currently set 0 to align with Unix Epoch
+
 }

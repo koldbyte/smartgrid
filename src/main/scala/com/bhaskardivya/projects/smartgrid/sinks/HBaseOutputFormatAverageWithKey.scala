@@ -48,7 +48,7 @@ class HBaseOutputFormatAverageWithKey extends OutputFormat[AverageWithKey] {
 
   @throws[IOException]
   override def writeRecord(record: AverageWithKey): Unit = {
-    val startTime = System.currentTimeMillis();
+    val startTime = System.currentTimeMillis()
     // Make sure that the rowkey is sorted by the average values
     val put = new Put(Bytes.toBytes(taskNumber + rowNumber) ++ record.bytesRowKey())
     put.setDurability(Durability.SKIP_WAL)

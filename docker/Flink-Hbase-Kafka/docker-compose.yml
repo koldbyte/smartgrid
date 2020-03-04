@@ -1,0 +1,29 @@
+version: '2.1'
+services:
+  flink-kafka-hbase:
+    image: quay.io/koldbyte/flink-cluster
+    container_name: flink_to_hbase
+    hostname: hbase-docker
+    ports:
+      - 8080:8080
+      - 8085:8085
+      - 9090:9090
+      - 9092:9092
+      - 9095:9095
+      - 2181:2181
+      - 16000:16000
+      - 16010:16010
+      - 16020:16020
+      - 16030:16030
+      - 6123:6123
+      - 7203:7203
+      - 8081:8081
+      - 8090:8090
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: hbase-docker
+    volumes:
+      - /data
+    external_links:
+      - elasticsearch
+      - kibana
+      - kafka-manager

@@ -1,0 +1,67 @@
+version: '2.1'
+services:
+  flink-kafka-hbase:
+    domainname: smartgrid.com
+    extends:
+      service: flink-kafka-hbase
+      file: ./Flink-Hbase-Kafka/docker-compose.yml
+    networks:
+      - smartgrid.com
+    volumes:
+      - /app/smartgrid/data:/data
+    links:
+      - elasticsearch
+      - elasticsearch2
+
+  elasticsearch:
+    domainname: smartgrid.com
+    extends:
+      service: elasticsearch
+      file: ./elasticsearch/docker-compose.yml
+    networks:
+      - smartgrid.com
+    volumes:
+      - /app/smartgrid/es-data:/usr/share/elasticsearch/data
+
+  elasticsearch2:
+    domainname: smartgrid.com
+    extends:
+      service: elasticsearch2
+      file: ./elasticsearch/docker-compose.yml
+    networks:
+      - smartgrid.com
+    volumes:
+      - /app/smartgrid/es-data-2:/usr/share/elasticsearch/data
+
+  kibana:
+    domainname: smartgrid.com
+    extends:
+      service: kibana
+      file: ./kibana/docker-compose.yml
+    networks:
+      - smartgrid.com
+    depends_on:
+      - elasticsearch
+    links:
+      - elasticsearch
+      - elasticsearch2
+
+  kafka_manager:
+    domainname: smartgrid.com
+    extends:
+      service: kafka_manager
+      file: ./kafka-manager/docker-compose.yml
+    networks:
+      - smartgrid.com
+    volumes:
+      - /app/smartgrid/kafka-manager:/kafka-manager/configuration
+    depends_on:
+      - flink-kafka-hbase
+    links:
+      - flink-kafka-hbase
+      - "flink-kafka-hbase:hbase-docker"
+
+networks:
+  smartgrid.com:
+    driver: bridge
+    name: smartgrid.com

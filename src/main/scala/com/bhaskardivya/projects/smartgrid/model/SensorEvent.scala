@@ -1,5 +1,6 @@
 package com.bhaskardivya.projects.smartgrid.model
 
+import com.bhaskardivya.projects.smartgrid.util.JSONTrait
 import org.apache.commons.lang3.builder.ToStringBuilder
 import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.serialization.TypeInformationSerializationSchema
@@ -13,9 +14,9 @@ import org.apache.sling.commons.json.JSONObject
 /**
   * id, timestamp, value, property, plug_id, household_id, house_id
   */
-case class SensorEvent(var id: Long,var  timestamp: Long, var value: Double, var property: Int, var plug_id: Long, var household_id: Long, var house_id: Long){
+case class SensorEvent(var id: Long,var  timestamp: Long, var value: Double, var property: Int, var plug_id: Long, var household_id: Long, var house_id: Long) extends JSONTrait {
 
-  def adjustEventTimestamp(millis: Long) = {
+  def adjustEventTimestamp(millis: Long): Unit = {
     this.timestamp = this.timestamp + (millis / 1000)
   }
 
@@ -30,13 +31,21 @@ case class SensorEvent(var id: Long,var  timestamp: Long, var value: Double, var
     val json: JSONObject = new JSONObject()
     json.put("id", this.id)
     json.put("timestamp", this.timestamp)
-    json.put("value", this.value)
+    json.put("value", normalise_double(this.value))
     json.put("property", this.property)
     json.put("plug_id", this.plug_id)
     json.put("household_id", this.household_id)
     json.put("house_id", this.house_id)
 
     json
+  }
+
+  def normalise_double(dbl: Double): Double = {
+    if(dbl < 1e-6) {
+      0.000001
+    }else{
+      dbl
+    }
   }
 }
 
@@ -56,7 +65,7 @@ object SensorEvent {
 
       new SensorEvent(id, timestamp, value, property, plug_id, household_id, house_id)
     } catch {
-      case e: Exception => null
+      case _ : Throwable => null
     }
   }
 
@@ -69,7 +78,7 @@ object SensorEvent {
 
   def tsAssigner(): BoundedOutOfOrdernessTimestampExtractor[SensorEvent] = {
     new BoundedOutOfOrdernessTimestampExtractor[SensorEvent](MAX_DELAY) {
-      override def extractTimestamp(element: SensorEvent) = element.getTimeMillis()
+      override def extractTimestamp(element: SensorEvent): Long = element.getTimeMillis()
     }
   }
 }

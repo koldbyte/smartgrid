@@ -58,6 +58,7 @@ under the License.
         <!-- Custom Added -->
         <elasticsearch.version>5.1.2</elasticsearch.version>
         <kafka.version>0.11.0.2</kafka.version>
+        <tdigest.version>3.2</tdigest.version>
         <!-- /Custom Added -->
     </properties>
 
@@ -158,6 +159,11 @@ under the License.
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-connector-elasticsearch5_${scala.binary.version}</artifactId>
             <version>${flink.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tdunning</groupId>
+            <artifactId>t-digest</artifactId>
+            <version>${tdigest.version}</version>
         </dependency>
         <!-- /Custom Added -->
     </dependencies>
